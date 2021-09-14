@@ -8,6 +8,7 @@ FROM debian:buster
 
 RUN mkdir /app
 COPY --from=builder /src/proxy /app/app
+RUN chmod +x /app/app
 
 WORKDIR /app
 ENTRYPOINT ./app
