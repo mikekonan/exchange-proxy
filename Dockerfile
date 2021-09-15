@@ -1,14 +1,9 @@
-FROM golang:buster as builder
+FROM golang:buster
 
 COPY . /src
 
-RUN cd /src && go build -o proxy
+RUN cd /src && go build -o /src/bin/proxy
 
-FROM debian:buster
+EXPOSE 8080
 
-RUN mkdir /app
-COPY --from=builder /src/proxy /app/app
-RUN chmod +x /app/app
-
-WORKDIR /app
-ENTRYPOINT ./app
+ENTRYPOINT /src/bin/proxy
