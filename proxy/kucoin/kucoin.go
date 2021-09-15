@@ -166,12 +166,11 @@ func (kucoin *kucoin) Start() {
 		return nil
 	})
 
-	router.Get("*", func(c *routing.Context) error {
+	router.Any("*", func(c *routing.Context) error {
 		logrus.Infof("processing %s", c.Request.RequestURI())
 
 		req := fasthttp.AcquireRequest()
 		c.Request.Header.CopyTo(&req.Header)
-
 		req.SetRequestURI(fmt.Sprintf("https://openapi-v2.kucoin.com/%s", c.Request.URI().RequestURI()))
 		req.SetBody(c.Request.Body())
 
