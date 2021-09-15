@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"sync"
+	"time"
 
 	"github.com/mikekonan/freqtradeProxy/model"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,7 @@ func (store *Store) Store(candle *model.Candle) {
 	store.m.Lock()
 	defer store.m.Unlock()
 
+	logrus.Tracef("storing candle for %s at %s of %s-%s", candle.Exchange, time.Unix(candle.Ts, 0), candle.Pair, candle.Timeframe)
 	tx, err := store.conn.Begin()
 	if err != nil {
 		logrus.Panic(err)

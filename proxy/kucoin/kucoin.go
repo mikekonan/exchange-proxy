@@ -99,6 +99,10 @@ func (kucoin *kucoin) Start() {
 				logrus.Fatal("Error: %s", err.Error())
 				return
 			case msg := <-kucoin.stream:
+				if msg == nil {
+					continue
+				}
+
 				if strings.HasPrefix(msg.Topic, "/market/candles:") {
 					candle := &candle{}
 					err := msg.ReadData(candle)
@@ -111,8 +115,6 @@ func (kucoin *kucoin) Start() {
 					tf := strings.Split(name, "_")[1]
 
 					kucoin.store.Store(kucoin.parseCandle(pair, tf, candle.Candle))
-
-					return
 				}
 			}
 		}
@@ -165,6 +167,8 @@ func (kucoin *kucoin) Start() {
 	})
 
 	router.Get("*", func(c *routing.Context) error {
+		logrus.Infof("processing %s", c.Request.RequestURI())
+
 		req := fasthttp.AcquireRequest()
 		c.Request.Header.CopyTo(&req.Header)
 

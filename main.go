@@ -11,7 +11,7 @@ import (
 
 func init() {
 	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 	logrus.AddHook(logrus_stack.StandardHook())
 }
 
