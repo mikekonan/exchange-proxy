@@ -32,7 +32,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 		}
 
 		c.count++
-		logrus.Infof("subscription i = '%d', count = '%d'", i, c.count)
+		logrus.Infof("subscription i = '%d', count = '%d', topic = '%s'", i, c.count, msg.Topic)
 
 		return
 	}
