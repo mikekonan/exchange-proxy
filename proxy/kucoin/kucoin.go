@@ -17,6 +17,7 @@ import (
 
 type subscriptionManager struct {
 	clients []*ws
+	rl      ratelimit.Limiter
 }
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
@@ -25,6 +26,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 			continue
 		}
 
+		m.rl.Take()
 		if err := c.client.Subscribe(msg); err != nil {
 			logrus.Fatal(err)
 		}
@@ -73,14 +75,13 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5)},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
 	instance.svc = svc
 
 	instance.rl = ratelimit.New(20)
-	instance.wsRl = ratelimit.New(9)
 
 	return instance
 }
@@ -91,7 +92,6 @@ type kucoin struct {
 	store *store.Store
 	svc   *sdk.ApiService
 	rl    ratelimit.Limiter
-	wsRl  ratelimit.Limiter
 
 	subscriptionManager *subscriptionManager
 }
@@ -176,7 +176,6 @@ func (kucoin *kucoin) Start() {
 				kucoin.store.Store(pc)
 			}
 
-			kucoin.wsRl.Take()
 			kucoin.subscriptionManager.Subscribe(
 				kucoin.svc,
 				sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
