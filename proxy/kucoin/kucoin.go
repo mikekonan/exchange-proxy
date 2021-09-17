@@ -15,59 +15,88 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-func New(s *store.Store) *kucoin {
-	return &kucoin{
-		client: fasthttp.Client{},
-		store:  s,
+type subscriptionManager struct {
+	clients []*ws
+}
+
+func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
+	for i, c := range m.clients {
+		if c.count == 200 {
+			continue
+		}
+
+		if err := c.client.Subscribe(msg); err != nil {
+			logrus.Fatal(err)
+		}
+
+		c.count++
+		logrus.Infof("subscription i = '%d', count = '%d'", i, c.count)
+
+		return
 	}
+
+	m.clients = append(m.clients, newWs(svc, store))
+	m.Subscribe(svc, msg, store)
+}
+
+func newWs(svc *sdk.ApiService, store *store.Store) *ws {
+	resp, err := svc.WebSocketPublicToken()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	var token sdk.WebSocketTokenModel
+	if err := resp.ReadData(&token); err != nil {
+		logrus.Fatal(err)
+	}
+
+	wsClient := svc.NewWebSocketClientOpts(sdk.WebSocketClientOpts{Token: &token, Timeout: time.Minute})
+	stream, errs, err := wsClient.Connect()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	result := &ws{client: wsClient, stream: stream, errs: errs}
+	go result.serveFor(store)
+
+	return result
+}
+
+type ws struct {
+	client *sdk.WebSocketClient
+	stream <-chan *sdk.WebSocketDownstreamMessage
+	errs   <-chan error
+	count  int
+}
+
+func New(s *store.Store) *kucoin {
+	instance := &kucoin{
+		client:              fasthttp.Client{},
+		store:               s,
+		subscriptionManager: &subscriptionManager{clients: nil},
+	}
+
+	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
+	instance.svc = svc
+
+	instance.rl = ratelimit.New(20)
+	instance.wsRl = ratelimit.New(9)
+
+	return instance
 }
 
 type kucoin struct {
 	client fasthttp.Client
-
-	ws     *sdk.WebSocketClient
-	stream <-chan *sdk.WebSocketDownstreamMessage
-	errs   <-chan error
 
 	store *store.Store
 	svc   *sdk.ApiService
 	rl    ratelimit.Limiter
 	wsRl  ratelimit.Limiter
 
-	subCount int
+	subscriptionManager *subscriptionManager
 }
 
-func (kucoin *kucoin) Connect() error {
-	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
-	kucoin.svc = svc
-
-	kucoin.rl = ratelimit.New(20)
-	kucoin.wsRl = ratelimit.New(9)
-
-	resp, err := kucoin.svc.WebSocketPublicToken()
-	if err != nil {
-		return err
-	}
-
-	var token sdk.WebSocketTokenModel
-	if err := resp.ReadData(&token); err != nil {
-		return err
-	}
-
-	kucoin.ws = kucoin.svc.NewWebSocketClientOpts(sdk.WebSocketClientOpts{Token: &token, Timeout: time.Minute})
-
-	stream, errs, err := kucoin.ws.Connect()
-	if err != nil {
-		return err
-	}
-
-	kucoin.stream = stream
-	kucoin.errs = errs
-
-	return nil
-}
-
-func (kucoin *kucoin) parseCandle(pair string, tf string, candle sdk.KLineModel) *model.Candle {
+func parseCandle(pair string, tf string, candle sdk.KLineModel) *model.Candle {
 	return &model.Candle{
 		Exchange:  "kucoin",
 		Pair:      pair,
@@ -88,37 +117,36 @@ type candle struct {
 	Candle sdk.KLineModel `json:"candles"`
 }
 
-func (kucoin *kucoin) Start() {
-	router := routing.New()
+func (ws *ws) serveFor(store *store.Store) {
+	for {
+		select {
+		case err := <-ws.errs:
+			logrus.Fatal("Error: %s", err.Error())
+			return
+		case msg := <-ws.stream:
+			if msg == nil {
+				continue
+			}
 
-	go func() {
-		for {
-			select {
-			case err := <-kucoin.errs:
-				kucoin.ws.Stop()
-				logrus.Fatal("Error: %s", err.Error())
-				return
-			case msg := <-kucoin.stream:
-				if msg == nil {
-					continue
+			if strings.HasPrefix(msg.Topic, "/market/candles:") {
+				candle := &candle{}
+				err := msg.ReadData(candle)
+				if err != nil {
+					logrus.Fatal("cannot read candle data")
 				}
 
-				if strings.HasPrefix(msg.Topic, "/market/candles:") {
-					candle := &candle{}
-					err := msg.ReadData(candle)
-					if err != nil {
-						logrus.Fatal("cannot read candle data")
-					}
+				name := strings.Replace(msg.Topic, "/market/candles:", "", 1)
+				pair := strings.Split(name, "_")[0]
+				tf := strings.Split(name, "_")[1]
 
-					name := strings.Replace(msg.Topic, "/market/candles:", "", 1)
-					pair := strings.Split(name, "_")[0]
-					tf := strings.Split(name, "_")[1]
-
-					kucoin.store.Store(kucoin.parseCandle(pair, tf, candle.Candle))
-				}
+				store.Store(parseCandle(pair, tf, candle.Candle))
 			}
 		}
-	}()
+	}
+}
+
+func (kucoin *kucoin) Start() {
+	router := routing.New()
 
 	router.Get("/api/v1/market/candles", func(c *routing.Context) error {
 		pair := string(c.Request.URI().QueryArgs().Peek("symbol"))
@@ -143,18 +171,17 @@ func (kucoin *kucoin) Start() {
 			}
 
 			for _, c := range candlesModel {
-				pc := kucoin.parseCandle(pair, timeframe, *c)
+				pc := parseCandle(pair, timeframe, *c)
 				candles = append(candles, pc)
 				kucoin.store.Store(pc)
 			}
 
 			kucoin.wsRl.Take()
-			err = kucoin.ws.Subscribe(
+			kucoin.subscriptionManager.Subscribe(
+				kucoin.svc,
 				sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
+				kucoin.store,
 			)
-
-			kucoin.subCount++
-			logrus.Warn(kucoin.subCount)
 
 			if err != nil {
 				return err

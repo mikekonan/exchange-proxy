@@ -18,9 +18,5 @@ func init() {
 func main() {
 	s := store.New()
 	k := kucoin.New(s)
-	if err := k.Connect(); err != nil {
-		logrus.Fatal(err)
-	}
-
 	k.Start()
 }
