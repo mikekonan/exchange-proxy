@@ -3,6 +3,7 @@ package kucoin
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	sdk "github.com/Kucoin/kucoin-go-sdk"
@@ -18,18 +19,22 @@ import (
 type subscriptionManager struct {
 	clients []*ws
 	rl      ratelimit.Limiter
+	l       *sync.Mutex
 }
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
 	for i, c := range m.clients {
-		if c.count == 200 {
+		if c.count == 100 {
 			continue
 		}
 
 		m.rl.Take()
+		m.l.Lock()
 		if err := c.client.Subscribe(msg); err != nil {
 			logrus.Fatal(err)
 		}
+
+		m.l.Unlock()
 
 		c.count++
 		logrus.Infof("subscription i = '%d', count = '%d', topic = '%s'", i, c.count, msg.Topic)
@@ -75,7 +80,7 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5)},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5), l: new(sync.Mutex)},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
