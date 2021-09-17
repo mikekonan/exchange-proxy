@@ -3,7 +3,6 @@ package kucoin
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	sdk "github.com/Kucoin/kucoin-go-sdk"
@@ -81,7 +80,7 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5), l: new(sync.Mutex)},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5)},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
