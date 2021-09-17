@@ -24,6 +24,8 @@ type subscriptionManager struct {
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
 	for i, c := range m.clients {
+		logrus.Error(c.count)
+
 		if c.count == 100 {
 			continue
 		}
@@ -33,7 +35,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 		if err := c.client.Subscribe(msg); err != nil {
 			logrus.Fatal(err)
 		}
-
+		
 		m.l.Unlock()
 
 		c.count++
