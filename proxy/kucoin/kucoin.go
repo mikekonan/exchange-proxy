@@ -19,32 +19,32 @@ import (
 type subscriptionManager struct {
 	clients []*ws
 	rl      ratelimit.Limiter
-	l       *sync.Mutex
 }
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
+	m.rl.Take()
 	for i, c := range m.clients {
-		logrus.Info(c.count, c)
 		if c.count == 100 {
 			continue
 		}
 
-		m.rl.Take()
-		m.l.Lock()
+		c.count += 1
 		if err := c.client.Subscribe(msg); err != nil {
 			logrus.Fatal(err)
 		}
 
-		m.l.Unlock()
-
-		c.count += 1
 		logrus.Infof("subscription i = '%d', count = '%d', topic = '%s'", i, c.count, msg.Topic)
 
 		return
 	}
 
-	m.clients = append(m.clients, newWs(svc, store))
-	m.Subscribe(svc, msg, store)
+	ws := newWs(svc, store)
+	ws.count += 1
+	if err := ws.client.Subscribe(msg); err != nil {
+		logrus.Fatal(err)
+	}
+
+	m.clients = append(m.clients, ws)
 }
 
 func newWs(svc *sdk.ApiService, store *store.Store) *ws {
