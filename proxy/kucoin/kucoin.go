@@ -24,8 +24,7 @@ type subscriptionManager struct {
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
 	for i, c := range m.clients {
-		logrus.Info(c.count)
-
+		logrus.Info(c.count, c)
 		if c.count == 100 {
 			continue
 		}
