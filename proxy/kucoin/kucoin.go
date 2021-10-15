@@ -155,7 +155,7 @@ func (ws *ws) serveFor(store *store.Store) {
 	}
 }
 
-func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) sdk.KLinesModel {
+func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (sdk.KLinesModel, error) {
 	var (
 		resp *sdk.ApiResponse
 		err  error
@@ -169,7 +169,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 		}
 
 		if i == retryCount {
-			logrus.Fatal(err)
+			return sdk.KLinesModel{}, err
 		}
 
 		time.Sleep(time.Millisecond * 150)
@@ -180,7 +180,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 		logrus.Fatal(err)
 	}
 
-	return candlesModel
+	return candlesModel, nil
 }
 
 func (kucoin *kucoin) Start() {
@@ -196,7 +196,10 @@ func (kucoin *kucoin) Start() {
 
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startAt, endAt)
 		if len(candles) == 0 {
-			candlesModel := kucoin.getKlines(pair, timeframe, startAt, endAt, 15)
+			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 15)
+			if err != nil {
+				return err
+			}
 
 			for _, c := range candlesModel {
 				pc := parseCandle(pair, timeframe, *c)
