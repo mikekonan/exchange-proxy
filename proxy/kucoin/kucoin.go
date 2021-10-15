@@ -196,7 +196,7 @@ func (kucoin *kucoin) Start() {
 
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startAt, endAt)
 		if len(candles) == 0 {
-			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 5)
+			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 2)
 			if err != nil {
 				return err
 			}
