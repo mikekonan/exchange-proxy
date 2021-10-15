@@ -172,7 +172,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 			logrus.Fatal(err)
 		}
 
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 150)
 	}
 
 	candlesModel := sdk.KLinesModel{}
@@ -196,7 +196,7 @@ func (kucoin *kucoin) Start() {
 
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startAt, endAt)
 		if len(candles) == 0 {
-			candlesModel := kucoin.getKlines(pair, timeframe, startAt, endAt, 10)
+			candlesModel := kucoin.getKlines(pair, timeframe, startAt, endAt, 15)
 
 			for _, c := range candlesModel {
 				pc := parseCandle(pair, timeframe, *c)
