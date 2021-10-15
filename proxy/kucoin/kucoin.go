@@ -91,7 +91,7 @@ func New(s *store.Store) *kucoin {
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
 	instance.svc = svc
 
-	instance.rl = ratelimit.New(20)
+	instance.rl = ratelimit.New(10)
 
 	return instance
 }
