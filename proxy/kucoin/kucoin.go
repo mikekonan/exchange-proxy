@@ -177,7 +177,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 
 	candlesModel := sdk.KLinesModel{}
 	if err := resp.ReadData(&candlesModel); err != nil {
-		logrus.Fatal(err)
+		return candlesModel, err
 	}
 
 	return candlesModel, nil
@@ -196,7 +196,7 @@ func (kucoin *kucoin) Start() {
 
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startAt, endAt)
 		if len(candles) == 0 {
-			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 2)
+			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 3)
 			if err != nil {
 				return err
 			}
