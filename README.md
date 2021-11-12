@@ -25,8 +25,12 @@ This project I made just for myself but can add more exchanges in the future.
 }
 ```
 
-## Execution
-```docker run --restart=always -p 169.254.1.1:8080:8080 --name freqtrade-proxy -d freqtrade-proxy```
+## OPS
+
+```
+docker build -t freqtrade-proxy .
+docker run --restart=always -p 169.254.1.1:8080:8080 --name freqtrade-proxy -d freqtrade-proxy
+```
 
 ## Donations
 Donations are appreciated and will make me motivated to support and improve the project.
