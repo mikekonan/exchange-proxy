@@ -27,9 +27,18 @@ This project I made just for myself but can add more exchanges in the future.
 
 ## OPS
 
+### Docker
 ```
+git clone https://github.com/mikekonan/freqtrade-proxy.git
 docker build -t freqtrade-proxy .
-docker run --restart=always -p 169.254.1.1:8080:8080 --name freqtrade-proxy -d freqtrade-proxy
+docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d freqtrade-proxy
+```
+
+### Local
+```
+git clone https://github.com/mikekonan/freqtrade-proxy.git
+make build
+./freqtrade-proxy -port 8080
 ```
 
 ## Donations

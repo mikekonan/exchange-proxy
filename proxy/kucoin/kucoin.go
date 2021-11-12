@@ -183,7 +183,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 	return candlesModel, nil
 }
 
-func (kucoin *kucoin) Start() {
+func (kucoin *kucoin) Start(port int) {
 	router := routing.New()
 
 	router.Get("/api/v1/market/candles", func(c *routing.Context) error {
@@ -239,5 +239,5 @@ func (kucoin *kucoin) Start() {
 		return nil
 	})
 
-	panic(fasthttp.ListenAndServe(":8080", router.HandleRequest))
+	panic(fasthttp.ListenAndServe(fmt.Sprintf(":%d", port), router.HandleRequest))
 }
