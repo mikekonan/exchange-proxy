@@ -27,12 +27,6 @@ This project I made just for myself but can add more exchanges in the future.
 ```
 
 ## OPS
-
-### Docker
-```
-docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main
-```
-
 ### Local
 ```
 git clone https://github.com/mikekonan/freqtrade-proxy.git
@@ -40,7 +34,12 @@ make build
 ./freqtrade-proxy -port 8080
 ```
 
-### Docker-compose
+### Docker (suggested way)
+```
+docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main
+```
+
+### Docker-compose (suggested way)
 ```
   freqtrade-proxy:
     image: mikekonan/freqtrade-proxy:main
