@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/Gurpartap/logrus-stack"
@@ -16,7 +17,10 @@ func init() {
 }
 
 func main() {
+	port := flag.Int("port", 8080, "listen port")
+	flag.Parse()
+
 	s := store.New()
 	k := kucoin.New(s)
-	k.Start()
+	k.Start(*port)
 }
