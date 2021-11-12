@@ -46,6 +46,28 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
     restart: unless-stopped
     container_name: freqtrade-proxy
 ```
+#### config.json
+```
+{
+    "exchange": {
+        "name": "kucoin",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {
+            "enableRateLimit": false,
+            "urls": {
+                "api": {
+                    "public": "http://freqtrade-proxy:8080/",
+                    "private": "http://freqtrade-proxy:8080/"
+                }
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": false
+        }
+    }
+}
+```
 
 ## Donations
 Donations are appreciated and will make me motivated to support and improve the project.
