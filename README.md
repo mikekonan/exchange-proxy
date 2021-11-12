@@ -40,6 +40,14 @@ make build
 ./freqtrade-proxy -port 8080
 ```
 
+### Docker-compose
+```
+  freqtrade-proxy:
+    image: mikekonan/freqtrade-proxy:main
+    restart: unless-stopped
+    container_name: freqtrade-proxy
+```
+
 ## Donations
 Donations are appreciated and will make me motivated to support and improve the project.
 
