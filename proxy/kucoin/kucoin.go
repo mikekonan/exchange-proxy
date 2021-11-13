@@ -183,6 +183,41 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 	return candlesModel, nil
 }
 
+func (kucoin *kucoin) timeframeToDuration(timeframe string) time.Duration {
+	switch timeframe {
+	case "1min":
+		return time.Minute
+	case "3min":
+		return time.Minute * 3
+	case "5min":
+		return time.Minute * 5
+	case "15min":
+		return time.Minute * 15
+	case "30min":
+		return time.Minute * 30
+	case "1hour":
+		return time.Hour
+	case "2hour":
+		return time.Hour * 2
+	case "4hour":
+		return time.Hour * 4
+	case "6hour":
+		return time.Hour * 6
+	case "8hour":
+		return time.Hour * 8
+	case "12hour":
+		return time.Hour * 12
+	case "1day":
+		return time.Hour * 24
+	}
+
+	return time.Hour * 24 * 7
+}
+
+func (kucoin *kucoin) truncateTs(timeframe string, ts time.Time) time.Time {
+	return ts.Truncate(kucoin.timeframeToDuration(timeframe))
+}
+
 func (kucoin *kucoin) Start(port int) {
 	router := routing.New()
 
@@ -191,12 +226,19 @@ func (kucoin *kucoin) Start(port int) {
 		timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
 		startAt := cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("startAt")))
 		endAt := cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("endAt")))
+		startTruncated := kucoin.truncateTs(timeframe, time.Unix(startAt, 0).UTC())
+		endTruncated := kucoin.truncateTs(timeframe, time.Unix(endAt, 0).UTC())
+		now := time.Now().UTC()
+		if now.Before(time.Unix(endAt, 0).UTC()) {
+			endTruncated = kucoin.truncateTs(timeframe, now)
+		}
 
 		logrus.Infof("%s-%s-%d-%d", pair, timeframe, startAt, endAt)
 
-		candles := kucoin.store.Get("kucoin", pair, timeframe, startAt, endAt)
+		candles := kucoin.store.Get("kucoin", pair, timeframe, startTruncated, endTruncated, kucoin.timeframeToDuration(timeframe))
+
 		if len(candles) == 0 {
-			candlesModel, err := kucoin.getKlines(pair, timeframe, startAt, endAt, 3)
+			candlesModel, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 3)
 			if err != nil {
 				return err
 			}
