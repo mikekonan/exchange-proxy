@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/Gurpartap/logrus-stack v0.0.0-20170710170904-89c00d8a28f4
-	github.com/Kucoin/kucoin-go-sdk v1.2.8
+	github.com/Kucoin/kucoin-go-sdk v1.2.10
 	github.com/doug-martin/goqu/v9 v9.16.0
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/go-ozzo/ozzo-routing v2.1.4+incompatible // indirect
