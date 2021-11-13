@@ -37,7 +37,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 			logrus.Fatal(err)
 		}
 
-		logrus.Infof("subscription i = '%d', count = '%d', topic = '%s'", i, c.count, msg.Topic)
+		logrus.Infof("#%d-%d topic: '%s' subscribing...", i+1, c.count, msg.Topic)
 
 		return
 	}
@@ -49,6 +49,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 	}
 
 	m.clients = append(m.clients, ws)
+	logrus.Infof("#%d-%d topic: '%s' subscribing...", len(m.clients), 1, msg.Topic)
 }
 
 func newWs(svc *sdk.ApiService, store *store.Store) *ws {
@@ -221,7 +222,9 @@ func (kucoin *kucoin) truncateTs(timeframe string, ts time.Time) time.Time {
 func (kucoin *kucoin) Start(port int) {
 	router := routing.New()
 
-	router.Get("/api/v1/market/candles", func(c *routing.Context) error {
+	router.Get("/kucoin/api/v1/market/candles", func(c *routing.Context) error {
+		logrus.Infof("processing request - %s", c.Request.RequestURI())
+
 		pair := string(c.Request.URI().QueryArgs().Peek("symbol"))
 		timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
 		startAt := cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("startAt")))
@@ -232,8 +235,6 @@ func (kucoin *kucoin) Start(port int) {
 		if now.Before(time.Unix(endAt, 0).UTC()) {
 			endTruncated = kucoin.truncateTs(timeframe, now)
 		}
-
-		logrus.Infof("%s-%s-%d-%d", pair, timeframe, startAt, endAt)
 
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startTruncated, endTruncated, kucoin.timeframeToDuration(timeframe))
 
@@ -260,12 +261,12 @@ func (kucoin *kucoin) Start(port int) {
 		return err
 	})
 
-	router.Any("*", func(c *routing.Context) error {
-		logrus.Infof("processing %s", c.Request.RequestURI())
+	router.Any("/kucoin/*", func(c *routing.Context) error {
+		logrus.Infof("proxying over - %s", c.Request.RequestURI())
 
 		req := fasthttp.AcquireRequest()
 		c.Request.Header.CopyTo(&req.Header)
-		req.SetRequestURI(fmt.Sprintf("https://openapi-v2.kucoin.com/%s", c.Request.URI().RequestURI()))
+		req.SetRequestURI(fmt.Sprintf("https://openapi-v2.kucoin.com/%s", c.Request.URI().RequestURI()[8:]))
 		req.SetBody(c.Request.Body())
 
 		resp := fasthttp.AcquireResponse()
@@ -280,6 +281,8 @@ func (kucoin *kucoin) Start(port int) {
 
 		return nil
 	})
+
+	logrus.Infof("starting proxy server on :%d port...", port)
 
 	panic(fasthttp.ListenAndServe(fmt.Sprintf(":%d", port), router.HandleRequest))
 }

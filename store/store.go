@@ -198,13 +198,25 @@ func (store *Store) selectCandleQuery(exchange string, pair string, timeframe st
 	return query
 }
 
-func (store *Store) selectLastCandle(exchange string, pair string, timeframe string, from int64) string {
+func (store *Store) selectLastCandleBeforeTs(exchange string, pair string, timeframe string, ts int64) string {
 	query, _, _ := g.Select("*").From("candles").
 		Where(
 			goqu.Ex{"exchange": exchange, "timeframe": timeframe, "pair": pair},
-			goqu.C("ts").Lt(from),
+			goqu.C("ts").Lt(ts),
 		).
 		Order(goqu.I("ts").Desc()).Limit(1).
+		ToSQL()
+
+	return query
+}
+
+func (store *Store) selectFirstCandleAfterTs(exchange string, pair string, timeframe string, ts int64) string {
+	query, _, _ := g.Select("*").From("candles").
+		Where(
+			goqu.Ex{"exchange": exchange, "timeframe": timeframe, "pair": pair},
+			goqu.C("ts").Gt(ts),
+		).
+		Order(goqu.I("ts").Asc()).Limit(1).
 		ToSQL()
 
 	return query
@@ -227,8 +239,14 @@ func (store *Store) Get(exchange string, pair string, timeframe string, from tim
 	}
 
 	if fromCandle.Ts == 0 {
-		if err := tx.Get(&fromCandle, store.selectLastCandle(exchange, pair, timeframe, from.Unix())); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if err := tx.Get(&fromCandle, store.selectLastCandleBeforeTs(exchange, pair, timeframe, from.Unix())); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			logrus.Panic()
+		}
+
+		if fromCandle.Ts == 0 {
+			if err := tx.Get(&fromCandle, store.selectFirstCandleAfterTs(exchange, pair, timeframe, from.Unix())); err != nil && !errors.Is(err, sql.ErrNoRows) {
+				logrus.Panic()
+			}
 		}
 
 		if fromCandle.Ts == 0 {
@@ -252,7 +270,6 @@ func (store *Store) Get(exchange string, pair string, timeframe string, from tim
 
 	prevCandle := fromCandle
 	for i := fromCandle.Ts; i <= to.Unix(); i += int64(period.Seconds()) {
-		println(i)
 		if _, ok := tsCandles[i]; !ok {
 			candle := prevCandle
 			candle.Ts = i
