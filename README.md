@@ -27,8 +27,8 @@ make build
             "enableRateLimit": false,
             "urls": {
                 "api": {
-                    "public": "http://127.0.0.1:8080",
-                    "private": "http://127.0.0.1:8080"
+                    "public": "http://127.0.0.1:8080/kucoin",
+                    "private": "http://127.0.0.1:8080/kucoin"
                 }
             }
         },
@@ -57,8 +57,8 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
             "enableRateLimit": false,
             "urls": {
                 "api": {
-                    "public": "http://127.0.0.1:8080",
-                    "private": "http://127.0.0.1:8080"
+                    "public": "http://127.0.0.1:8080/kucoin",
+                    "private": "http://127.0.0.1:8080/kucoin"
                 }
             }
         },
@@ -92,8 +92,8 @@ See example - [docker-compose.yml](docker-compose.yml)
             "enableRateLimit": false,
             "urls": {
                 "api": {
-                    "public": "http://freqtrade-proxy:8080/",
-                    "private": "http://freqtrade-proxy:8080/"
+                    "public": "http://freqtrade-proxy:8080/kucoin",
+                    "private": "http://freqtrade-proxy:8080/kucoin"
                 }
             }
         },
