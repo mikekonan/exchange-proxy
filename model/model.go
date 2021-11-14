@@ -18,7 +18,7 @@ type Candle struct {
 	Amount    float64 `db:"amount"`
 }
 
-type Candles []*Candle
+type Candles []Candle
 
 func (candles Candles) KucoinRespJSON() []byte {
 	buff := bytes.NewBuffer(nil)
