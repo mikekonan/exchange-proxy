@@ -27,8 +27,8 @@ var bootstrapScript string
 func New() *Store {
 	store := new(Store)
 	var err error
-	//store.conn, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
-	store.conn, err = sqlx.Open("sqlite3", "kek.db")
+	store.conn, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
+	//store.conn, err = sqlx.Open("sqlite3", "kek.db")
 	if err != nil {
 		logrus.Panic(err)
 	}
@@ -109,7 +109,7 @@ func (stroe *Store) insertCandlesQuery(exchange string, pair string, timeframe s
 	return query
 }
 
-func (store *Store) Store(candle *model.Candle) {
+func (store *Store) Store(candle model.Candle) {
 	store.m.Lock()
 	defer store.m.Unlock()
 
