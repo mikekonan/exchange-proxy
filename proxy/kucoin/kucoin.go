@@ -107,8 +107,8 @@ type kucoin struct {
 	subscriptionManager *subscriptionManager
 }
 
-func parseCandle(pair string, tf string, candle sdk.KLineModel) *model.Candle {
-	return &model.Candle{
+func parseCandle(pair string, tf string, candle sdk.KLineModel) model.Candle {
+	return model.Candle{
 		Exchange:  "kucoin",
 		Pair:      pair,
 		Timeframe: tf,
