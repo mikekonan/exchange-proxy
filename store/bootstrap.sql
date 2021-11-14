@@ -1,4 +1,4 @@
-create table candles
+create table if not exists candles
 (
     exchange  TEXT not null,
     pair      TEXT not null,

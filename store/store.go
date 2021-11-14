@@ -27,8 +27,8 @@ var bootstrapScript string
 func New() *Store {
 	store := new(Store)
 	var err error
-	store.conn, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
-	//store.conn, err = sqlx.Open("sqlite3", "kek.db")
+	//store.conn, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
+	store.conn, err = sqlx.Open("sqlite3", "kek.db")
 	if err != nil {
 		logrus.Panic(err)
 	}
@@ -91,9 +91,9 @@ func (store *Store) selectRowIdQuery(exchange string, timeframe string, pair str
 	return query
 }
 
-func (stroe *Store) updateCandleQuery(close float64, volume float64, amount float64, exchange string, timeframe string, pair string, ts int64) string {
+func (stroe *Store) updateCandleQuery(open float64, high float64, low float64, close float64, volume float64, amount float64, exchange string, timeframe string, pair string, ts int64) string {
 	query, _, _ := g.Update("candles").
-		Set(goqu.Record{"close": close, "volume": volume, "amount": amount}).
+		Set(goqu.Record{"open": open, "high": high, "low": low, "close": close, "volume": volume, "amount": amount}).
 		Where(goqu.Ex{"exchange": exchange, "timeframe": timeframe, "pair": pair, "ts": ts}).
 		ToSQL()
 
@@ -132,7 +132,7 @@ func (store *Store) Store(candle *model.Candle) {
 	}
 
 	if count > 0 {
-		if _, err := tx.Exec(store.updateCandleQuery(candle.Close, candle.Volume, candle.Amount, candle.Exchange, candle.Timeframe, candle.Pair, candle.Ts)); err != nil {
+		if _, err := tx.Exec(store.updateCandleQuery(candle.Open, candle.High, candle.Low, candle.Close, candle.Volume, candle.Amount, candle.Exchange, candle.Timeframe, candle.Pair, candle.Ts)); err != nil {
 			logrus.Panic(err)
 		}
 
@@ -283,8 +283,7 @@ func (store *Store) Get(exchange string, pair string, timeframe string, from tim
 
 	result = make(model.Candles, 0, cacheSize)
 	for k := range tsCandles {
-		c := tsCandles[k]
-		result = append(result, &c)
+		result = append(result, tsCandles[k])
 	}
 
 	sort.Slice(result, func(i, j int) bool {
