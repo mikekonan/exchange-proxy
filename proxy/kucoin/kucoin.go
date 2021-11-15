@@ -27,7 +27,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 	defer m.l.Unlock()
 
 	for i, c := range m.clients {
-		if c.count == 100 {
+		if c.count == 250 {
 			continue
 		}
 
