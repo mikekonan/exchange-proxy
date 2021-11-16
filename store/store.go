@@ -17,7 +17,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const cacheSize = 1500
+const cacheSize = 5000
 
 var g = goqu.Dialect("sqlite3")
 
