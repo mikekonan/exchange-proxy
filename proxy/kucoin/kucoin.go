@@ -1,6 +1,7 @@
 package kucoin
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -156,7 +157,7 @@ func (ws *ws) serveFor(store *store.Store) {
 	}
 }
 
-func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (sdk.KLinesModel, error) {
+func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (sdk.KLinesModel, *sdk.ApiResponse, error) {
 	var (
 		resp *sdk.ApiResponse
 		err  error
@@ -169,19 +170,19 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 			break
 		}
 
-		if i == retryCount {
-			return sdk.KLinesModel{}, err
+		if i == retryCount || resp.Code != "429000" { //This type of Candlestick is currently not provided
+			return sdk.KLinesModel{}, resp, err
 		}
 
-		time.Sleep(time.Millisecond * 150)
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	candlesModel := sdk.KLinesModel{}
 	if err := resp.ReadData(&candlesModel); err != nil {
-		return candlesModel, err
+		return candlesModel, resp, err
 	}
 
-	return candlesModel, nil
+	return candlesModel, resp, nil
 }
 
 func (kucoin *kucoin) timeframeToDuration(timeframe string) time.Duration {
@@ -219,6 +220,17 @@ func (kucoin *kucoin) truncateTs(timeframe string, ts time.Time) time.Time {
 	return ts.Truncate(kucoin.timeframeToDuration(timeframe))
 }
 
+type apiResp struct {
+	Code    string          `json:"code"`
+	RawData json.RawMessage `json:"data,omitempty"`
+	Message string          `json:"msg"`
+}
+
+func (resp *apiResp) json() []byte {
+	data, _ := json.Marshal(resp)
+	return data
+}
+
 func (kucoin *kucoin) Start(port int) {
 	router := routing.New()
 
@@ -239,9 +251,14 @@ func (kucoin *kucoin) Start(port int) {
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startTruncated, endTruncated, kucoin.timeframeToDuration(timeframe))
 
 		if len(candles) == 0 {
-			candlesModel, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 3)
+			candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 3)
 			if err != nil {
-				return err
+				logrus.Warn(err)
+
+				c.Response.SetStatusCode(200)
+				c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
+
+				return nil
 			}
 
 			for _, c := range candlesModel {
