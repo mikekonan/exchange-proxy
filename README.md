@@ -40,9 +40,9 @@ make build
 ```
 
 ### Docker (suggested way)
-
+###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 ```
-docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main
+docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
 ```
 
 #### config.json
@@ -70,12 +70,13 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
 ```
 
 ### Docker-compose (best way)
+###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 See example - [docker-compose.yml](docker-compose.yml)
 
 ```
   freqtrade-proxy:
-    image: mikekonan/freqtrade-proxy:main
+    image: mikekonan/freqtrade-proxy:main-amd64
     restart: unless-stopped
     container_name: freqtrade-proxy
 ```
