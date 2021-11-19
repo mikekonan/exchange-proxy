@@ -87,13 +87,13 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(10), l: new(sync.Mutex)},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(9), l: new(sync.Mutex)},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
 	instance.svc = svc
 
-	instance.rl = ratelimit.New(20)
+	instance.rl = ratelimit.New(15)
 
 	return instance
 }
@@ -157,6 +157,14 @@ func (ws *ws) serveFor(store *store.Store) {
 	}
 }
 
+func (kucoin *kucoin) kucoinCodeToHttpCode(str string) int {
+	if len(str) < 3 {
+		return 200
+	}
+
+	return cast.ToInt(str[:3])
+}
+
 func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (sdk.KLinesModel, *sdk.ApiResponse, error) {
 	var (
 		resp *sdk.ApiResponse
@@ -170,11 +178,12 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 			break
 		}
 
-		if i == retryCount || resp.Code != "429000" { //This type of Candlestick is currently not provided
+		logrus.Warn(i)
+		if i == retryCount {
 			return sdk.KLinesModel{}, resp, err
 		}
 
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Second)
 	}
 
 	candlesModel := sdk.KLinesModel{}
@@ -251,14 +260,12 @@ func (kucoin *kucoin) Start(port int) {
 		candles := kucoin.store.Get("kucoin", pair, timeframe, startTruncated, endTruncated, kucoin.timeframeToDuration(timeframe))
 
 		if len(candles) == 0 {
-			candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 3)
-			if err != nil {
-				logrus.Warn(err)
+			candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 15)
+			c.Response.SetStatusCode(kucoin.kucoinCodeToHttpCode(resp.Code))
+			c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
 
-				c.Response.SetStatusCode(200)
-				c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
-
-				return nil
+			if len(candlesModel) == 0 {
+				logrus.Warnf("there is no candle data from kucoin for - '%s'", c.Request.RequestURI())
 			}
 
 			for _, c := range candlesModel {
@@ -267,11 +274,15 @@ func (kucoin *kucoin) Start(port int) {
 				kucoin.store.Store(pc)
 			}
 
-			kucoin.subscriptionManager.Subscribe(
-				kucoin.svc,
-				sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
-				kucoin.store,
-			)
+			if err == nil {
+				go kucoin.subscriptionManager.Subscribe(
+					kucoin.svc,
+					sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
+					kucoin.store,
+				)
+			}
+
+			return nil
 		}
 
 		_, err := c.Write(candles.KucoinRespJSON())
