@@ -87,13 +87,13 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(5), l: new(sync.Mutex)},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(10), l: new(sync.Mutex)},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
 	instance.svc = svc
 
-	instance.rl = ratelimit.New(10)
+	instance.rl = ratelimit.New(20)
 
 	return instance
 }
