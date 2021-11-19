@@ -25,6 +25,7 @@ make build
         "secret": "",
         "ccxt_config": {
             "enableRateLimit": false,
+            "timeout": 60000,
             "urls": {
                 "api": {
                     "public": "http://127.0.0.1:8080/kucoin",
@@ -33,14 +34,17 @@ make build
             }
         },
         "ccxt_async_config": {
-            "enableRateLimit": false
+            "enableRateLimit": false,
+            "timeout": 60000
         }
     }
 }
 ```
 
 ### Docker (suggested way)
+
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
+
 ```
 docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
 ```
@@ -55,6 +59,7 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
         "secret": "",
         "ccxt_config": {
             "enableRateLimit": false,
+            "timeout": 60000,
             "urls": {
                 "api": {
                     "public": "http://127.0.0.1:8080/kucoin",
@@ -63,13 +68,15 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
             }
         },
         "ccxt_async_config": {
-            "enableRateLimit": false
+            "enableRateLimit": false,
+            "timeout": 60000
         }
     }
 }
 ```
 
 ### Docker-compose (best way)
+
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 See example - [docker-compose.yml](docker-compose.yml)
@@ -91,6 +98,7 @@ See example - [docker-compose.yml](docker-compose.yml)
         "secret": "",
         "ccxt_config": {
             "enableRateLimit": false,
+            "timeout": 60000,
             "urls": {
                 "api": {
                     "public": "http://freqtrade-proxy:8080/kucoin",
@@ -99,7 +107,8 @@ See example - [docker-compose.yml](docker-compose.yml)
             }
         },
         "ccxt_async_config": {
-            "enableRateLimit": false
+            "enableRateLimit": false,
+            "timeout": 60000
         }
     }
 }
