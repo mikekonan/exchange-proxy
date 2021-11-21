@@ -1,6 +1,9 @@
-.PHONY: help build clean
+.PHONY: help build build-local clean
 
 .DEFAULT_GOAL := help
+
+build-local:
+	go build -trimpath -o ./bin/freqtrade-proxy
 
 build: ## build binaries
 	go build -trimpath -o ./bin/freqtrade-proxy-darwin-amd64
