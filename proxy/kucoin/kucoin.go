@@ -17,6 +17,10 @@ import (
 	"go.uber.org/ratelimit"
 )
 
+func init() {
+	sdk.DebugMode = true
+}
+
 type subscriptionManager struct {
 	clients []*ws
 	rl      ratelimit.Limiter
@@ -178,8 +182,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 			break
 		}
 
-		logrus.Warn(i)
-		if i == retryCount {
+		if i == retryCount || !strings.HasPrefix(resp.Code, "429") {
 			return sdk.KLinesModel{}, resp, err
 		}
 
@@ -232,7 +235,7 @@ func (kucoin *kucoin) truncateTs(timeframe string, ts time.Time) time.Time {
 type apiResp struct {
 	Code    string          `json:"code"`
 	RawData json.RawMessage `json:"data,omitempty"`
-	Message string          `json:"msg"`
+	Message string          `json:"msg,omitempty"`
 }
 
 func (resp *apiResp) json() []byte {
