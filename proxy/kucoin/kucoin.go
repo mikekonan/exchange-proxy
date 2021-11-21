@@ -17,19 +17,22 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-func init() {
-	sdk.DebugMode = true
-}
-
 type subscriptionManager struct {
 	clients []*ws
 	rl      ratelimit.Limiter
 	l       *sync.Mutex
+	subs    map[string]struct{}
 }
 
 func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store) {
 	m.l.Lock()
 	defer m.l.Unlock()
+
+	if _, ok := m.subs[msg.Topic]; ok {
+		return
+	}
+
+	m.subs[msg.Topic] = struct{}{}
 
 	for i, c := range m.clients {
 		if c.count == 250 {
@@ -91,7 +94,7 @@ func New(s *store.Store) *kucoin {
 	instance := &kucoin{
 		client:              fasthttp.Client{},
 		store:               s,
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(9), l: new(sync.Mutex)},
+		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(9), l: new(sync.Mutex), subs: map[string]struct{}{}},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
