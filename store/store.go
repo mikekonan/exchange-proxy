@@ -244,12 +244,6 @@ func (store *Store) Get(exchange string, pair string, timeframe string, from tim
 		}
 
 		if fromCandle.Ts == 0 {
-			if err := tx.Get(&fromCandle, store.selectFirstCandleAfterTs(exchange, pair, timeframe, from.Unix())); err != nil && !errors.Is(err, sql.ErrNoRows) {
-				logrus.Panic()
-			}
-		}
-
-		if fromCandle.Ts == 0 {
 			return nil
 		}
 
