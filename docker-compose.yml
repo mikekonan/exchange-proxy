@@ -17,4 +17,5 @@ services:
   freqtrade-proxy:
     image: mikekonan/freqtrade-proxy:main
     restart: unless-stopped
+    command: -verbose 1
     container_name: freqtrade-proxy
