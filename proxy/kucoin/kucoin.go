@@ -35,7 +35,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 	m.subs[msg.Topic] = struct{}{}
 
 	for i, c := range m.clients {
-		if c.count == 250 {
+		if c.count == 299 {
 			continue
 		}
 
@@ -185,7 +185,7 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 			break
 		}
 
-		if i == retryCount || !strings.HasPrefix(resp.Code, "429") {
+		if err != nil || i == retryCount || !strings.HasPrefix(resp.Code, "429") {
 			return sdk.KLinesModel{}, resp, err
 		}
 
@@ -250,7 +250,7 @@ func (kucoin *kucoin) Start(port int) {
 	router := routing.New()
 
 	router.Get("/kucoin/api/v1/market/candles", func(c *routing.Context) error {
-		logrus.Infof("processing request - %s", c.Request.RequestURI())
+		logrus.Debugf("processing request - %s", c.Request.RequestURI())
 
 		pair := string(c.Request.URI().QueryArgs().Peek("symbol"))
 		timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
@@ -267,6 +267,10 @@ func (kucoin *kucoin) Start(port int) {
 
 		if len(candles) == 0 {
 			candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 15)
+			if err != nil && resp == nil {
+				logrus.Fatal(err)
+			}
+
 			c.Response.SetStatusCode(kucoin.kucoinCodeToHttpCode(resp.Code))
 			c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
 
@@ -296,7 +300,7 @@ func (kucoin *kucoin) Start(port int) {
 	})
 
 	router.Any("/kucoin/*", func(c *routing.Context) error {
-		logrus.Infof("proxying over - %s", c.Request.RequestURI())
+		logrus.Debugf("proxying over - %s", c.Request.RequestURI())
 
 		req := fasthttp.AcquireRequest()
 		c.Request.Header.CopyTo(&req.Header)
