@@ -9,10 +9,11 @@ This project I made just for myself but can add more exchanges in the future.
 
 ### Local
 
+###### !!! Verbosity is mandatory while submitting an issue `command: -verbose 1`
 ```
 git clone https://github.com/mikekonan/freqtrade-proxy.git
 make build
-./freqtrade-proxy -port 8080
+./freqtrade-proxy -port 8080 -verbose 1
 ```
 
 #### config.json
@@ -81,11 +82,14 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
 
 See example - [docker-compose.yml](docker-compose.yml)
 
+###### !!! Verbosity is mandatory while submitting an issue `command: -verbose 1`
+
 ```
   freqtrade-proxy:
     image: mikekonan/freqtrade-proxy:main-amd64
     restart: unless-stopped
     container_name: freqtrade-proxy
+    command: -verbose 1
 ```
 
 #### config.json
