@@ -2,9 +2,9 @@ FROM golang:buster as builder
 
 COPY . /src
 
-RUN cd /src && go build -o /src/bin/proxy
+RUN cd /src && go build -ldflags '-linkmode external -extldflags -static -w' -o /src/bin/proxy
 
-FROM gcr.io/distroless/base
+FROM scratch
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /src/bin/proxy /bin/proxy
