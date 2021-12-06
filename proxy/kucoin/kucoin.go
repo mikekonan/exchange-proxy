@@ -90,10 +90,30 @@ type ws struct {
 	count  int
 }
 
-func New(s *store.Store) *kucoin {
+func New(store *store.Store, config Config) *kucoin {
+	client := &fasthttp.Client{
+		ReadTimeout:  time.Second * 15,
+		WriteTimeout: time.Second * 15,
+	}
+
+	//if config.Localaddr != "" {
+	//	localAddr, err := net.ResolveIPAddr("ip", config.Localaddr)
+	//	if err != nil {
+	//		logrus.Errorf("cannot revolve '%v'", config.Localaddr)
+	//	}
+	//
+	//	dialer := &net.Dialer{LocalAddr: &net.TCPAddr{IP: localAddr.IP}}
+	//
+	//	client.Dial = func(addr string) (net.Conn, error) {
+	//		fmt.Println(addr)
+	//		return dialer.Dial("tcp", addr)
+	//	}
+	//}
+
 	instance := &kucoin{
-		client:              fasthttp.Client{},
-		store:               s,
+		config:              config,
+		client:              client,
+		store:               store,
 		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(9), l: new(sync.Mutex), subs: map[string]struct{}{}},
 	}
 
@@ -106,13 +126,14 @@ func New(s *store.Store) *kucoin {
 }
 
 type kucoin struct {
-	client fasthttp.Client
+	client *fasthttp.Client
 
 	store *store.Store
 	svc   *sdk.ApiService
 	rl    ratelimit.Limiter
 
 	subscriptionManager *subscriptionManager
+	config              Config
 }
 
 func parseCandle(pair string, tf string, candle sdk.KLineModel) model.Candle {
@@ -246,7 +267,7 @@ func (resp *apiResp) json() []byte {
 	return data
 }
 
-func (kucoin *kucoin) Start(port int) {
+func (kucoin *kucoin) Start() {
 	router := routing.New()
 
 	router.Get("/kucoin/api/v1/market/candles", func(c *routing.Context) error {
@@ -320,7 +341,7 @@ func (kucoin *kucoin) Start(port int) {
 		return nil
 	})
 
-	logrus.Infof("starting proxy server on :%d port...", port)
+	logrus.Infof("starting proxy server on :%s port...", kucoin.config.Port)
 
-	panic(fasthttp.ListenAndServe(fmt.Sprintf(":%d", port), router.HandleRequest))
+	panic(fasthttp.ListenAndServe(fmt.Sprintf("%s:%s", kucoin.config.Bindaddr, kucoin.config.Port), router.HandleRequest))
 }

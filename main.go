@@ -1,24 +1,35 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"os"
 
-	"github.com/Gurpartap/logrus-stack"
+	logrus_stack "github.com/Gurpartap/logrus-stack"
+	"github.com/jaffee/commandeer"
 	"github.com/mikekonan/freqtradeProxy/proxy/kucoin"
 	"github.com/mikekonan/freqtradeProxy/store"
 	"github.com/sirupsen/logrus"
 )
 
-func main() {
-	logrus.SetOutput(os.Stdout)
-	logrus.AddHook(logrus_stack.StandardHook())
+var version = "dev"
 
-	port := flag.Int("port", 8080, "listen port")
-	verbose := flag.Int("verbose", 0, "verbose level. 0 - info [default]. 1 - debug. 2 - trace.")
-	flag.Parse()
+type app struct {
+	Config  kucoin.Config `flag:"!embed"`
+	Verbose int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
+}
 
-	switch *verbose {
+func newApp() *app {
+	return &app{
+		Verbose: 0,
+		Config: kucoin.Config{
+			Port:     "8080",
+			Bindaddr: "0.0.0.0",
+		},
+	}
+}
+
+func (m *app) configure() {
+	switch m.Verbose {
 	case 0:
 		logrus.SetLevel(logrus.InfoLevel)
 	case 1:
@@ -26,8 +37,34 @@ func main() {
 	case 2:
 		logrus.SetLevel(logrus.TraceLevel)
 	}
+}
 
-	s := store.New()
-	k := kucoin.New(s)
-	k.Start(*port)
+func (a *app) Run() error {
+	logrus.SetOutput(os.Stdout)
+	logrus.AddHook(logrus_stack.StandardHook())
+
+	logrus.Infof("freqtrade-proxy version - %s", version)
+
+	if a.Verbose > 2 {
+		return fmt.Errorf("wrong verbose level '%d'", a.Verbose)
+	}
+
+	a.configure()
+
+	if err := a.Config.Validate(); err != nil {
+		return err
+	}
+
+	k := kucoin.New(store.New(), a.Config)
+	k.Start()
+
+	return nil
+}
+
+func main() {
+	app := newApp()
+
+	if err := commandeer.Run(app); err != nil {
+		logrus.Fatal(err)
+	}
 }
