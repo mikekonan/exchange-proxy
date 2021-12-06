@@ -1,16 +1,9 @@
-.PHONY: help build build-local clean
+.PHONY: help build clean
 
 .DEFAULT_GOAL := help
 
-build-local:
-	go build -trimpath -o ./dist/freqtrade-proxy
-
 build: ## build binaries
-	go build -trimpath -o ./dist/freqtrade-proxy-darwin-amd64
-	for arch in "linux/amd64" "linux/arm/v6" "linux/arm/v7" "linux/arm64" ; do \
-		echo $${arch//\//-}; \
-		docker run --platform $$arch -v $(PWD):/tmp/src golang:buster /bin/bash -c "cd /tmp/src && go build -trimpath -o ./dist/freqtrade-proxy-"$${arch//\//-} ;\
-	done
+	go build -trimpath -o ./dist/freqtrade-proxy
 
 clean: ## clean
 	rm ./dist/freqtrade-proxy*
