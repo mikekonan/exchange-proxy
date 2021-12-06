@@ -15,7 +15,7 @@ services:
       --strategy SampleStrategy
 
   freqtrade-proxy:
-    image: mikekonan/freqtrade-proxy:main
+    image: mikekonan/freqtrade-proxy:main-amd64
     restart: unless-stopped
     command: -verbose 1
     container_name: freqtrade-proxy

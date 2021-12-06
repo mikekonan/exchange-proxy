@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/doug-martin/goqu/v9"
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const cacheSize = 5000
@@ -27,8 +27,8 @@ var bootstrapScript string
 func New() *Store {
 	store := new(Store)
 	var err error
-	store.conn, err = sqlx.Open("sqlite", "file::memory:?cache=shared")
-	//store.conn, err = sqlx.Open("sqlite", "kek.db")
+	store.conn, err = sqlx.Open("sqlite3", "file::memory:?cache=shared")
+	//store.conn, err = sqlx.Open("sqlite3", "kek.db")
 	if err != nil {
 		logrus.Panic(err)
 	}
