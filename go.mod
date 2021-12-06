@@ -12,11 +12,12 @@ require (
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f // indirect
 	github.com/jaffee/commandeer v0.5.0
 	github.com/jmoiron/sqlx v1.3.4
+	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/qiangxue/fasthttp-routing v0.0.0-20160225050629-6ccdc2a18d87
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/cast v1.3.0
 	github.com/valyala/fasthttp v1.29.0
 	go.uber.org/ratelimit v0.2.0
 	go4.org v0.0.0-20201209231011-d4a079459e60
-	modernc.org/sqlite v1.14.2
+	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 )
