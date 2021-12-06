@@ -1,12 +1,16 @@
-FROM golang:buster as builder
+FROM golang:1.17.4-alpine3.15 as builder
+
+RUN apk --no-cache add gcc musl-dev
 
 COPY . /src
 
-RUN cd /src && go build -ldflags '-linkmode external -extldflags -static -w' -o /src/bin/proxy
+RUN cd /src && go build -o /src/bin/proxy
 
-FROM scratch
+FROM alpine:3.15
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN apk --no-cache add ca-certificates \
+    && rm -rf /var/cache/apk/*
+
 COPY --from=builder /src/bin/proxy /bin/proxy
 
 EXPOSE 8080
