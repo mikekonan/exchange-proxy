@@ -7,10 +7,19 @@ This project I made just for myself but can add more exchanges in the future.
 
 ## OPS
 
-### Local
-
-###### !!! Verbosity is mandatory while submitting an issue `command: -verbose 1`
+### Usage
+```shell
+Usage of ./freqtrade-proxy:
+  -bindaddr string
+        bindable address (default "0.0.0.0")
+  -port string
+        listen port (default "8080")
+  -verbose int
+        verbose level: 0 - info, 1 - debug, 2 - trace
 ```
+
+### Local
+```shell
 git clone https://github.com/mikekonan/freqtrade-proxy.git
 make build
 ./freqtrade-proxy -port 8080 -verbose 1
@@ -18,7 +27,7 @@ make build
 
 #### config.json
 
-```
+```json
 {
     "exchange": {
         "name": "kucoin",
@@ -46,13 +55,13 @@ make build
 
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
-```
+```shell
 docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
 ```
 
 #### config.json
 
-```
+```json
 {
     "exchange": {
         "name": "kucoin",
@@ -81,10 +90,7 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 See example - [docker-compose.yml](docker-compose.yml)
-
-###### !!! Verbosity is mandatory while submitting an issue `command: -verbose 1`
-
-```
+```yaml
   freqtrade-proxy:
     image: mikekonan/freqtrade-proxy:main-amd64
     restart: unless-stopped
@@ -94,7 +100,7 @@ See example - [docker-compose.yml](docker-compose.yml)
 
 #### config.json
 
-```
+```json
 {
     "exchange": {
         "name": "kucoin",
