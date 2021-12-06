@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var version = "dev"
+
 type app struct {
 	Config  kucoin.Config `flag:"!embed"`
 	Verbose int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
@@ -40,6 +42,8 @@ func (m *app) configure() {
 func (a *app) Run() error {
 	logrus.SetOutput(os.Stdout)
 	logrus.AddHook(logrus_stack.StandardHook())
+
+	logrus.Infof("freqtrade-proxy version - %s", version)
 
 	if a.Verbose > 2 {
 		return fmt.Errorf("wrong verbose level '%d'", a.Verbose)
