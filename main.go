@@ -14,14 +14,16 @@ import (
 var version = "dev"
 
 type app struct {
-	Config  kucoin.Config `flag:"!embed"`
-	Verbose int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
+	Kucoin    kucoin.Config `flag:"!embed"`
+	Verbose   int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
+	CacheSize int           `help:"amount of candles to cache"`
 }
 
 func newApp() *app {
 	return &app{
-		Verbose: 0,
-		Config: kucoin.Config{
+		Verbose:   0,
+		CacheSize: 1000,
+		Kucoin: kucoin.Config{
 			Port:     "8080",
 			Bindaddr: "0.0.0.0",
 		},
@@ -51,11 +53,11 @@ func (a *app) Run() error {
 
 	a.configure()
 
-	if err := a.Config.Validate(); err != nil {
+	if err := a.Kucoin.Validate(); err != nil {
 		return err
 	}
 
-	k := kucoin.New(store.New(), a.Config)
+	k := kucoin.New(store.NewCandlesStore(a.CacheSize), a.Kucoin)
 	k.Start()
 
 	return nil
