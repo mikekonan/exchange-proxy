@@ -8,9 +8,6 @@ import (
 )
 
 type Candle struct {
-	//Exchange  string
-	//Pair      string
-	//Timeframe string
 	Ts     time.Time
 	Open   float64
 	High   float64
@@ -18,6 +15,18 @@ type Candle struct {
 	Close  float64
 	Volume float64
 	Amount float64
+}
+
+func (c *Candle) Clone() *Candle {
+	return &Candle{
+		Ts:     c.Ts,
+		Open:   c.Open,
+		High:   c.High,
+		Low:    c.Low,
+		Close:  c.Close,
+		Volume: c.Volume,
+		Amount: c.Amount,
+	}
 }
 
 type Candles []*Candle

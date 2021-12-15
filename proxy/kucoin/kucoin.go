@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/Kucoin/kucoin-go-sdk"
-	"github.com/mikekonan/freqtradeProxy/model"
+	"github.com/mikekonan/freqtradeProxy/proxy"
 	"github.com/mikekonan/freqtradeProxy/store"
 	"github.com/qiangxue/fasthttp-routing"
 	"github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ type subscriptionManager struct {
 	subs    map[string]struct{}
 }
 
-func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.CandlesStore) {
+func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketSubscribeMessage, store *store.Store, topicsPerWs int) {
 	m.l.Lock()
 	defer m.l.Unlock()
 
@@ -34,7 +34,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 	m.subs[msg.Topic] = struct{}{}
 
 	for i, c := range m.clients {
-		if c.count == 299 {
+		if c.count == topicsPerWs {
 			continue
 		}
 
@@ -59,7 +59,7 @@ func (m *subscriptionManager) Subscribe(svc *sdk.ApiService, msg *sdk.WebSocketS
 	logrus.Infof("#%d-%d topic: '%s' subscribing...", len(m.clients), 1, msg.Topic)
 }
 
-func newWs(svc *sdk.ApiService, store *store.CandlesStore) *ws {
+func newWs(svc *sdk.ApiService, store *store.Store) *ws {
 	resp, err := svc.WebSocketPublicToken()
 	if err != nil {
 		logrus.Fatal(err)
@@ -89,7 +89,7 @@ type ws struct {
 	count  int
 }
 
-func New(store_ *store.CandlesStore, config Config) *kucoin {
+func New(store *store.Store, ttlCache *store.TTLCache, config *Config) *kucoin {
 	client := &fasthttp.Client{
 		ReadTimeout:  time.Second * 15,
 		WriteTimeout: time.Second * 15,
@@ -110,11 +110,16 @@ func New(store_ *store.CandlesStore, config Config) *kucoin {
 	//}
 
 	instance := &kucoin{
-		config:              config,
-		client:              client,
-		store:               store_,
-		secondStore:         store.NewCandlesStore(5000),
-		subscriptionManager: &subscriptionManager{clients: nil, rl: ratelimit.New(9), l: new(sync.Mutex), subs: map[string]struct{}{}},
+		config:   config,
+		client:   client,
+		store:    store,
+		ttlCache: ttlCache,
+		subscriptionManager: &subscriptionManager{
+			clients: nil,
+			rl:      ratelimit.New(9),
+			l:       new(sync.Mutex),
+			subs:    map[string]struct{}{},
+		},
 	}
 
 	svc := sdk.NewApiService(sdk.ApiKeyVersionOption(sdk.ApiKeyVersionV2))
@@ -128,28 +133,13 @@ func New(store_ *store.CandlesStore, config Config) *kucoin {
 type kucoin struct {
 	client *fasthttp.Client
 
-	store *store.CandlesStore
-	svc   *sdk.ApiService
-	rl    ratelimit.Limiter
+	store    *store.Store
+	ttlCache *store.TTLCache
+	svc      *sdk.ApiService
+	rl       ratelimit.Limiter
 
 	subscriptionManager *subscriptionManager
-	config              Config
-	secondStore         *store.CandlesStore
-}
-
-func parseCandle(pair string, tf string, candle sdk.KLineModel) *model.Candle {
-	return &model.Candle{
-		//Exchange:  "kucoin",
-		//Pair:      pair,
-		//Timeframe: tf,
-		Ts:     time.Unix(cast.ToInt64(candle[0]), 0).UTC(),
-		Open:   cast.ToFloat64(candle[1]),
-		High:   cast.ToFloat64(candle[3]),
-		Low:    cast.ToFloat64(candle[4]),
-		Close:  cast.ToFloat64(candle[2]),
-		Volume: cast.ToFloat64(candle[5]),
-		Amount: cast.ToFloat64(candle[6]),
-	}
+	config              *Config
 }
 
 type candle struct {
@@ -158,7 +148,7 @@ type candle struct {
 	Candle sdk.KLineModel `json:"candles"`
 }
 
-func (ws *ws) serveFor(store *store.CandlesStore) {
+func (ws *ws) serveFor(store *store.Store) {
 	for {
 		select {
 		case err := <-ws.errs:
@@ -180,7 +170,7 @@ func (ws *ws) serveFor(store *store.CandlesStore) {
 				pair := strings.Split(name, "_")[0]
 				tf := strings.Split(name, "_")[1]
 
-				store.Store(storeKey(pair, tf), parseCandle(pair, tf, candle.Candle))
+				store.Store(storeKey(pair, tf), timeframeToDuration(tf), parseCandle(candle.Candle))
 			}
 		}
 	}
@@ -214,80 +204,88 @@ func (kucoin *kucoin) getKlines(pair string, timeframe string, startAt int64, en
 	return candlesModel, resp, nil
 }
 
-func (kucoin *kucoin) Start() {
-	router := routing.New()
+func (kucoin *kucoin) transparentRequestURI(c *routing.Context) string {
+	return fmt.Sprintf("%s/%s", kucoin.config.RequestURL, c.Request.URI().RequestURI()[8:])
+}
 
-	router.Get("/kucoin/api/v1/market/candles", func(c *routing.Context) error {
-		logrus.Debugf("processing request - %s", c.Request.RequestURI())
+func (kucoin *kucoin) Name() string {
+	return "kucoin"
+}
 
-		pair := string(c.Request.URI().QueryArgs().Peek("symbol"))
-		timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
-		startAt := cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("startAt")))
-		endAt := cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("endAt")))
-		startTruncated := truncateTs(timeframe, time.Unix(startAt, 0).UTC())
-		endTruncated := truncateTs(timeframe, time.Unix(endAt, 0).UTC())
-		now := time.Now().UTC()
-		if now.Before(time.Unix(endAt, 0).UTC()) {
-			endTruncated = truncateTs(timeframe, now)
-		}
+func (kucoin *kucoin) Routes() map[string]struct {
+	Method  string
+	Handler func(c *routing.Context) error
+} {
+	return map[string]struct {
+		Method  string
+		Handler func(c *routing.Context) error
+	}{
+		"api/v1/market/allTickers": {
+			Method:  "GET",
+			Handler: proxy.TransparentOverCacheHandler(kucoin.transparentRequestURI, kucoin.client, kucoin.ttlCache),
+		},
 
-		candles := kucoin.secondStore.Get(storeKey(pair, timeframe), startTruncated, endTruncated, timeframeToDuration(timeframe))
+		"api/v1/currencies": {
+			Method:  "GET",
+			Handler: proxy.TransparentOverCacheHandler(kucoin.transparentRequestURI, kucoin.client, kucoin.ttlCache),
+		},
 
-		if len(candles) == 0 {
-			candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startTruncated.Unix(), endAt, 15)
-			if err != nil && resp == nil {
-				logrus.Fatal(err)
-			}
+		"api/v1/symbols": {
+			Method:  "GET",
+			Handler: proxy.TransparentOverCacheHandler(kucoin.transparentRequestURI, kucoin.client, kucoin.ttlCache),
+		},
 
-			c.Response.SetStatusCode(kucoinCodeToHttpCode(resp.Code))
-			c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
+		"*": {
+			Method:  "GET",
+			Handler: proxy.TransparentHandler(kucoin.transparentRequestURI, kucoin.client),
+		},
 
-			if len(candlesModel) == 0 {
-				logrus.Warnf("there is no candle data from kucoin for - '%s'", c.Request.RequestURI())
-			}
+		"api/v1/market/candles": {
+			Method: "GET",
+			Handler: func(c *routing.Context) error {
+				logrus.Debugf("proxying - %s", c.Request.RequestURI())
 
-			kucoin.secondStore.Store(
-				storeKey(pair, timeframe),
-				parseCandleModels(pair, timeframe, candlesModel)...,
-			)
+				pair := string(c.Request.URI().QueryArgs().Peek("symbol"))
+				timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
+				startAt := time.Unix(cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("startAt"))), 0)
+				endAt := time.Unix(cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("endAt"))), 0)
 
-			if err == nil {
-				go kucoin.subscriptionManager.Subscribe(
-					kucoin.svc,
-					sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
-					kucoin.secondStore,
-				)
-			}
+				candles := kucoin.store.Get(storeKey(pair, timeframe), startAt, endAt)
 
-			return nil
-		}
+				if len(candles) == 0 {
+					candlesModel, resp, err := kucoin.getKlines(pair, timeframe, startAt.Unix(), endAt.Unix(), 15)
+					if err != nil && resp == nil {
+						logrus.Fatal(err)
+					}
 
-		_, err := c.Write(candles.KucoinRespJSON())
-		return err
-	})
+					c.Response.SetStatusCode(kucoinCodeToHttpCode(resp.Code))
+					c.Response.SetBody((&apiResp{Code: resp.Code, RawData: resp.RawData, Message: resp.Message}).json())
 
-	router.Any("/kucoin/*", func(c *routing.Context) error {
-		logrus.Debugf("proxying over - %s", c.Request.RequestURI())
+					if len(candlesModel) == 0 {
+						logrus.Warnf("there is no candle data from kucoin for - '%s'", c.Request.RequestURI())
+					}
 
-		req := fasthttp.AcquireRequest()
-		c.Request.Header.CopyTo(&req.Header)
-		req.SetRequestURI(fmt.Sprintf("https://openapi-v2.kucoin.com/%s", c.Request.URI().RequestURI()[8:]))
-		req.SetBody(c.Request.Body())
+					kucoin.store.Store(
+						storeKey(pair, timeframe),
+						timeframeToDuration(timeframe),
+						parseCandleModels(candlesModel)...,
+					)
 
-		resp := fasthttp.AcquireResponse()
-		if err := kucoin.client.Do(req, resp); err != nil {
-			logrus.Error(err)
-			return err
-		}
+					if err == nil {
+						go kucoin.subscriptionManager.Subscribe(
+							kucoin.svc,
+							sdk.NewSubscribeMessage(fmt.Sprintf("/market/candles:%s_%s", pair, timeframe), false),
+							kucoin.store,
+							kucoin.config.TopicsPerWs,
+						)
+					}
 
-		resp.Header.CopyTo(&c.Response.Header)
-		c.Response.SetStatusCode(resp.StatusCode())
-		c.Response.SetBody(resp.Body())
+					return nil
+				}
 
-		return nil
-	})
-
-	logrus.Infof("starting proxy server on :%s port...", kucoin.config.Port)
-
-	panic(fasthttp.ListenAndServe(fmt.Sprintf("%s:%s", kucoin.config.Bindaddr, kucoin.config.Port), router.HandleRequest))
+				_, err := c.Write(candles.KucoinRespJSON())
+				return err
+			},
+		},
+	}
 }

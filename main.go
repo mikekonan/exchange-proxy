@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	logrus_stack "github.com/Gurpartap/logrus-stack"
 	"github.com/jaffee/commandeer"
+	"github.com/mikekonan/freqtradeProxy/proxy"
 	"github.com/mikekonan/freqtradeProxy/proxy/kucoin"
 	"github.com/mikekonan/freqtradeProxy/store"
 	"github.com/sirupsen/logrus"
@@ -14,16 +16,24 @@ import (
 var version = "dev"
 
 type app struct {
-	Kucoin    kucoin.Config `flag:"!embed"`
-	Verbose   int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
-	CacheSize int           `help:"amount of candles to cache"`
+	Verbose         int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
+	CacheSize       int           `help:"amount of candles to cache"`
+	TTLCacheTimeout time.Duration `help:"ttl of blobs of cached data"`
+
+	ProxyConfig  proxy.Config  `flag:"!embed"`
+	KucoinConfig kucoin.Config `flag:"!embed"`
 }
 
 func newApp() *app {
 	return &app{
-		Verbose:   0,
-		CacheSize: 1000,
-		Kucoin: kucoin.Config{
+		Verbose:         0,
+		CacheSize:       1000,
+		TTLCacheTimeout: time.Minute * 10,
+		KucoinConfig: kucoin.Config{
+			TopicsPerWs: 200,
+			RequestURL:  "https://openapi-v2.kucoin.com",
+		},
+		ProxyConfig: proxy.Config{
 			Port:     "8080",
 			Bindaddr: "0.0.0.0",
 		},
@@ -53,12 +63,20 @@ func (a *app) Run() error {
 
 	a.configure()
 
-	if err := a.Kucoin.Validate(); err != nil {
+	if err := a.ProxyConfig.Validate(); err != nil {
 		return err
 	}
 
-	k := kucoin.New(store.NewCandlesStore(a.CacheSize), a.Kucoin)
-	k.Start()
+	if err := a.KucoinConfig.Validate(); err != nil {
+		return err
+	}
+
+	proxySrv := proxy.New(&a.ProxyConfig, kucoin.New(
+		store.NewStore(a.CacheSize),
+		store.NewTTLCache(a.TTLCacheTimeout),
+		&a.KucoinConfig),
+	)
+	proxySrv.Serve()
 
 	return nil
 }

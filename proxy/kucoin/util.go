@@ -40,10 +40,6 @@ func timeframeToDuration(timeframe string) time.Duration {
 	return time.Hour * 24 * 7
 }
 
-func truncateTs(timeframe string, ts time.Time) time.Time {
-	return ts.Truncate(timeframeToDuration(timeframe))
-}
-
 func storeKey(pair string, tf string) string {
 	return fmt.Sprintf("kucoin-%s-%s", pair, tf)
 }
@@ -56,24 +52,22 @@ func kucoinCodeToHttpCode(str string) int {
 	return cast.ToInt(str[:3])
 }
 
-func parseCandleModelsReversed(pair string, tf string, candlesModel sdk.KLinesModel) model.Candles {
-	candles := make(model.Candles, 0, len(candlesModel))
-
-	for _, c := range candlesModel {
-		candles = append(candles, parseCandle(pair, tf, *c))
+func parseCandle(candle sdk.KLineModel) *model.Candle {
+	return &model.Candle{
+		Ts:     time.Unix(cast.ToInt64(candle[0]), 0).UTC(),
+		Open:   cast.ToFloat64(candle[1]),
+		High:   cast.ToFloat64(candle[3]),
+		Low:    cast.ToFloat64(candle[4]),
+		Close:  cast.ToFloat64(candle[2]),
+		Volume: cast.ToFloat64(candle[5]),
+		Amount: cast.ToFloat64(candle[6]),
 	}
-
-	for i := len(candlesModel) - 1; i >= 0; i-- {
-		candles = append(candles, parseCandle(pair, tf, *candlesModel[i]))
-	}
-
-	return candles
 }
 
-func parseCandleModels(pair string, tf string, candlesModel sdk.KLinesModel) model.Candles {
+func parseCandleModels(candlesModel sdk.KLinesModel) model.Candles {
 	candles := make(model.Candles, 0, len(candlesModel))
 	for _, c := range candlesModel {
-		pc := parseCandle(pair, tf, *c)
+		pc := parseCandle(*c)
 		candles = append(candles, pc)
 	}
 

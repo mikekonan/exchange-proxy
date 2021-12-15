@@ -1,58 +1,75 @@
 package store
 
 import (
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/mikekonan/freqtradeProxy/model"
 )
 
-func NewCandlesStore(cacheSize int) *CandlesStore {
-	return &CandlesStore{
+func NewStore(cacheSize int) *Store {
+	return &Store{
 		l:           new(sync.RWMutex),
 		mappedLists: map[string]*candlesLinkedList{},
 		cacheSize:   cacheSize,
 	}
 }
 
-type CandlesStore struct {
+type Store struct {
 	l           *sync.RWMutex
 	mappedLists map[string]*candlesLinkedList
 	cacheSize   int
 }
 
-func (s *CandlesStore) Store(key string, candles ...*model.Candle) {
+func (s *Store) Store(key string, period time.Duration, candles ...*model.Candle) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
-	if s.mappedLists[key] == nil {
-		s.mappedLists[key] = newCandlesLinkedList()
+	bucket := s.mappedLists[key]
+	if bucket == nil {
+		bucket = newCandlesLinkedList()
+		s.mappedLists[key] = bucket
 	}
 
 	for _, c := range candles {
+		if bucket.last != nil {
+			steps := c.Ts.Sub(bucket.last.value.Ts) / period
+
+			if steps > 1 {
+				for i := 1; i < int(steps); i++ {
+					painted := bucket.last.value.Clone()
+					painted.Ts = painted.Ts.Add(time.Duration(i) * period)
+					painted.Volume = 0
+					painted.Amount = 0
+					s.store(key, painted)
+				}
+			}
+		}
+
 		s.store(key, c)
 	}
 }
 
-func (s *CandlesStore) store(key string, candle *model.Candle) {
-	first, ok := s.mappedLists[key].get(0)
+func (s *Store) store(key string, candle *model.Candle) {
+	bucket := s.mappedLists[key]
+
+	first, ok := bucket.get(0)
 	if ok && first.Ts == candle.Ts {
-		s.mappedLists[key].set(0, candle)
+		bucket.set(0, candle)
 
 		return
 	}
 
-	if s.mappedLists[key].size() == s.cacheSize {
-		s.mappedLists[key].remove(s.cacheSize - 1)
+	if bucket.size() == s.cacheSize {
+		bucket.remove(s.cacheSize - 1)
 	}
 
-	s.mappedLists[key].prepend(candle)
+	bucket.prepend(candle)
 
 	return
 }
 
-func (s *CandlesStore) Get(key string, from time.Time, to time.Time, period time.Duration) model.Candles {
+func (s *Store) Get(key string, from time.Time, to time.Time) model.Candles {
 	s.l.RLock()
 	defer s.l.RUnlock()
 
@@ -62,48 +79,9 @@ func (s *CandlesStore) Get(key string, from time.Time, to time.Time, period time
 	}
 
 	candles := bucket.selectInRangeReversedFn(
-		func(candle *model.Candle) bool {
-			return candle.Ts == from || candle.Ts.Before(from)
-		},
-		func(candle *model.Candle) bool {
-			return candle.Ts == to
-		},
+		func(candle *model.Candle) bool { return candle.Ts == from || candle.Ts.Before(from) },
+		func(candle *model.Candle) bool { return candle.Ts == to || candle.Ts.Before(to) },
 	)
-
-	if len(candles) == 0 {
-		return nil
-	}
-
-	firstCandle := candles[len(candles)-1]
-
-	var tsCandles = make(map[time.Time]*model.Candle, s.cacheSize)
-	tsCandles[firstCandle.Ts] = firstCandle
-
-	for _, r := range candles {
-		tsCandles[r.Ts] = r
-	}
-
-	prevCandle := firstCandle
-	for i := firstCandle.Ts; i.Before(to) || i == to; i = i.Add(period) {
-		if _, ok := tsCandles[i]; !ok {
-			candle := prevCandle
-			candle.Ts = i
-			candle.Volume = 0
-			candle.Amount = 0
-			tsCandles[i] = candle
-		} else {
-			prevCandle = tsCandles[i]
-		}
-	}
-
-	result := make(model.Candles, 0, s.cacheSize)
-	for k := range tsCandles {
-		result = append(result, tsCandles[k])
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Ts.After(result[j].Ts)
-	})
 
 	return candles
 }
