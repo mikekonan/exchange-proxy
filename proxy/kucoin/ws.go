@@ -278,7 +278,7 @@ func (w *ws) processFrame(frame *websocket.Frame) {
 		return
 	}
 
-	logrus.Debugf("received message '%s'-'%s'-'%s'", message.Topic, message.Subject, message.Type)
+	logrus.Tracef("received message '%s'-'%s'-'%s'", message.Topic, message.Subject, message.Type)
 
 	switch message.Type {
 	case pong:

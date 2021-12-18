@@ -57,7 +57,7 @@ func (s *Store) Store(key string, period time.Duration, candles ...*model.Candle
 func (s *Store) store(bucket *candlesLinkedList, candle *model.Candle) {
 	first, ok := bucket.get(0)
 	if ok && first.Ts == candle.Ts {
-		logrus.Debugf("%s %s - update first", first.Ts.String(), candle.Ts.String())
+		logrus.Tracef("%s %s - update first", first.Ts.String(), candle.Ts.String())
 		bucket.set(0, candle)
 
 		return
@@ -68,11 +68,11 @@ func (s *Store) store(bucket *candlesLinkedList, candle *model.Candle) {
 	}
 
 	if ok && first.Ts.Before(candle.Ts) {
-		logrus.Debugf("%s %s - prepend", first.Ts.String(), candle.Ts.String())
+		logrus.Tracef("%s %s - prepend", first.Ts.String(), candle.Ts.String())
 		bucket.prepend(candle)
 	} else {
 		if first != nil {
-			logrus.Debugf("%s %s - append", first.Ts.String(), candle.Ts.String())
+			logrus.Tracef("%s %s - append", first.Ts.String(), candle.Ts.String())
 		}
 
 		bucket.append(candle)

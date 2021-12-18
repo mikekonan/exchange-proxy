@@ -291,7 +291,7 @@ func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*mode
 
 	started := false
 
-	for element := list.last; element != nil; element = element.prev {
+	for element := list.first; element != nil; element = element.next {
 		if started || toSelectorFn(element.value) {
 			started = true
 		} else {
@@ -303,10 +303,6 @@ func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*mode
 		if started && fromSelectorFn(element.value) {
 			break
 		}
-	}
-
-	for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
-		values[i], values[j] = values[j], values[i]
 	}
 
 	return values
