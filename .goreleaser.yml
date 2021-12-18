@@ -46,7 +46,7 @@ dockers:
       - mikekonan/freqtrade-proxy:latest-{{ .Os }}_{{ .Arch }}
       - mikekonan/freqtrade-proxy:{{ .Tag }}-{{ .Os }}_{{ .Arch }}
 
-  build_flag_templates:
-    - "--build-arg=VERSION={{ .Version }}"
+  - build_flag_templates:
+      - "--build-arg=VERSION={{ .Version }}"
 
 
