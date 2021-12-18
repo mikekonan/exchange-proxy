@@ -286,7 +286,7 @@ func (list *candlesLinkedList) withinRange(index int) bool {
 	return index >= 0 && index < list.len
 }
 
-func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) []*model.Candle {
+func (list *candlesLinkedList) selectFn(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) []*model.Candle {
 	values := make([]*model.Candle, 0, 200)
 
 	started := false
@@ -301,28 +301,6 @@ func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*mode
 		values = append(values, element.value)
 
 		if started && fromSelectorFn(element.value) {
-			break
-		}
-	}
-
-	return values
-}
-
-func (list *candlesLinkedList) selectFn(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) []*model.Candle {
-	values := make([]*model.Candle, 0)
-
-	started := false
-
-	for element := list.first; element != nil; element = element.next {
-		if started || fromSelectorFn(element.value) {
-			started = true
-		} else {
-			continue
-		}
-
-		values = append(values, element.value)
-
-		if started && toSelectorFn(element.value) {
 			break
 		}
 	}

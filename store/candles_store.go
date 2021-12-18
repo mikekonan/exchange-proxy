@@ -88,7 +88,7 @@ func (s *Store) Get(key string, from time.Time, to time.Time) []*model.Candle {
 		return nil
 	}
 
-	candles := bucket.selectInRangeReversedFn(
+	candles := bucket.selectFn(
 		func(candle *model.Candle) bool { return candle.Ts == from || candle.Ts.Before(from) },
 		func(candle *model.Candle) bool { return candle.Ts == to || candle.Ts.Before(to) },
 	)
