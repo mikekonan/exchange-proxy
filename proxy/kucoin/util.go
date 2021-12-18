@@ -1,12 +1,18 @@
 package kucoin
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
 	"time"
 
-	sdk "github.com/Kucoin/kucoin-go-sdk"
 	"github.com/mikekonan/freqtradeProxy/model"
 	"github.com/spf13/cast"
+)
+
+var (
+	startArrayJsonBytes = []byte(`[`)
+	endArrayJsonBytes   = []byte(`]`)
 )
 
 func timeframeToDuration(timeframe string) time.Duration {
@@ -44,15 +50,7 @@ func storeKey(pair string, tf string) string {
 	return fmt.Sprintf("kucoin-%s-%s", pair, tf)
 }
 
-func kucoinCodeToHttpCode(str string) int {
-	if len(str) < 3 {
-		return 200
-	}
-
-	return cast.ToInt(str[:3])
-}
-
-func parseCandle(candle sdk.KLineModel) *model.Candle {
+func parseCandle(candle kLine) *model.Candle {
 	return &model.Candle{
 		Ts:     time.Unix(cast.ToInt64(candle[0]), 0).UTC(),
 		Open:   cast.ToFloat64(candle[1]),
@@ -64,12 +62,37 @@ func parseCandle(candle sdk.KLineModel) *model.Candle {
 	}
 }
 
-func parseCandleModels(candlesModel sdk.KLinesModel) model.Candles {
-	candles := make(model.Candles, 0, len(candlesModel))
+func parseKLines(candlesModel kLines) []*model.Candle {
+	candles := make([]*model.Candle, 0, len(candlesModel))
+
 	for _, c := range candlesModel {
 		pc := parseCandle(*c)
 		candles = append(candles, pc)
 	}
 
 	return candles
+}
+
+func floatFmt(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
+}
+
+func candlesJSON(candles []*model.Candle) []byte {
+	buff := bytes.NewBuffer(nil)
+	buff.Write(startArrayJsonBytes)
+	for _, c := range candles {
+		buff.Write([]byte(fmt.Sprintf(`["%d","%s","%s","%s","%s","%s","%s"],`, c.Ts.Unix(), floatFmt(c.Open), floatFmt(c.Close), floatFmt(c.High), floatFmt(c.Low), floatFmt(c.Volume), floatFmt(c.Amount))))
+	}
+
+	if len(candles) > 0 {
+		buff.Truncate(buff.Len() - 1)
+	}
+
+	buff.Write(endArrayJsonBytes)
+
+	return buff.Bytes()
+}
+
+func wsTopic(pair string, tf string) string {
+	return fmt.Sprintf("%s_%s", pair, tf)
 }

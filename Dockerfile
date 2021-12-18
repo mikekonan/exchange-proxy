@@ -4,7 +4,9 @@ RUN apk --no-cache add gcc musl-dev
 
 COPY . /src
 
-RUN cd /src && go build -o /src/bin/proxy
+ARG VERSION=dev
+
+RUN cd /src && go build -o /src/bin/proxy -ldflags "-s -w -X main.version=$VERSION"
 
 FROM alpine:3.15
 

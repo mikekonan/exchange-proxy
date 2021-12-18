@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mikekonan/freqtradeProxy/model"
+	"github.com/sirupsen/logrus"
 )
 
 func NewStore(cacheSize int) *Store {
@@ -32,29 +33,31 @@ func (s *Store) Store(key string, period time.Duration, candles ...*model.Candle
 	}
 
 	for _, c := range candles {
-		if bucket.last != nil {
-			steps := c.Ts.Sub(bucket.last.value.Ts) / period
+		if bucket.first != nil {
+			steps := c.Ts.Sub(bucket.first.value.Ts) / period
 
 			if steps > 1 {
 				for i := 1; i < int(steps); i++ {
-					painted := bucket.last.value.Clone()
-					painted.Ts = painted.Ts.Add(time.Duration(i) * period)
+					painted := bucket.first.value.Clone()
+					painted.Ts = painted.Ts.Add(period)
 					painted.Volume = 0
 					painted.Amount = 0
-					s.store(key, painted)
+
+					logrus.Warnf("saving painted candle: ts '%s' for '%s'...", painted.Ts, key)
+
+					s.store(bucket, painted)
 				}
 			}
 		}
 
-		s.store(key, c)
+		s.store(bucket, c)
 	}
 }
 
-func (s *Store) store(key string, candle *model.Candle) {
-	bucket := s.mappedLists[key]
-
+func (s *Store) store(bucket *candlesLinkedList, candle *model.Candle) {
 	first, ok := bucket.get(0)
 	if ok && first.Ts == candle.Ts {
+		logrus.Debugf("%s %s - update first", first.Ts.String(), candle.Ts.String())
 		bucket.set(0, candle)
 
 		return
@@ -64,12 +67,19 @@ func (s *Store) store(key string, candle *model.Candle) {
 		bucket.remove(s.cacheSize - 1)
 	}
 
-	bucket.prepend(candle)
+	if ok && first.Ts.Before(candle.Ts) {
+		logrus.Debugf("%s %s - prepend", first.Ts.String(), candle.Ts.String())
+		bucket.prepend(candle)
+	} else {
+		if first != nil {
+			logrus.Debugf("%s %s - append", first.Ts.String(), candle.Ts.String())
+		}
 
-	return
+		bucket.append(candle)
+	}
 }
 
-func (s *Store) Get(key string, from time.Time, to time.Time) model.Candles {
+func (s *Store) Get(key string, from time.Time, to time.Time) []*model.Candle {
 	s.l.RLock()
 	defer s.l.RUnlock()
 

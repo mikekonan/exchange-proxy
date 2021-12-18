@@ -8,8 +8,11 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+const AnyHTTPMethod = "<ANY>"
+
 type Routable interface {
-	Routes() map[string]struct {
+	Routes() []struct {
+		Path    string
 		Method  string
 		Handler func(c *routing.Context) error
 	}
@@ -20,16 +23,16 @@ type Routable interface {
 func New(config *Config, routable Routable) *Router {
 	router := routing.New()
 
-	for k, v := range routable.Routes() {
-		path := fmt.Sprintf("/%s/%s", routable.Name(), k)
-		logrus.Infof("applying route '%s' of method '%s'", path, v.Method)
+	for _, route := range routable.Routes() {
+		path := fmt.Sprintf("/%s/%s", routable.Name(), route.Path)
+		logrus.Infof("applying route '%s' of method '%s'", path, route.Method)
 
-		if v.Method == "<ANY>" {
-			router.Any(path, v.Handler)
+		if route.Method == AnyHTTPMethod {
+			router.Any(path, route.Handler)
 			continue
 		}
 
-		router.To(v.Method, path, v.Handler)
+		router.To(route.Method, path, route.Handler)
 	}
 
 	return &Router{

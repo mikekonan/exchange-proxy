@@ -1,3 +1,4 @@
+//nolint:unused
 package store
 
 import (
@@ -141,15 +142,17 @@ func (list *candlesLinkedList) contains(values ...*model.Candle) bool {
 }
 
 func (list *candlesLinkedList) values() []*model.Candle {
-	values := make([]*model.Candle, list.len, list.len)
+	values := make([]*model.Candle, list.len)
+
 	for e, element := 0, list.first; element != nil; e, element = e+1, element.next {
 		values[e] = element.value
 	}
+
 	return values
 }
 
 func (list *candlesLinkedList) invertedValues() []*model.Candle {
-	values := make([]*model.Candle, list.len, list.len)
+	values := make([]*model.Candle, list.len)
 	for e, element := 0, list.last; element != nil; e, element = e+1, element.prev {
 		values[e] = element.value
 	}
@@ -284,7 +287,7 @@ func (list *candlesLinkedList) withinRange(index int) bool {
 }
 
 func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) []*model.Candle {
-	values := make([]*model.Candle, 0)
+	values := make([]*model.Candle, 0, 200)
 
 	started := false
 
@@ -302,53 +305,29 @@ func (list *candlesLinkedList) selectInRangeReversedFn(fromSelectorFn func(*mode
 		}
 	}
 
+	for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
+		values[i], values[j] = values[j], values[i]
+	}
+
 	return values
 }
 
-func (list *candlesLinkedList) selectInRangeReversedFn2(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) *candlesLinkedList {
-	newList := newCandlesLinkedList()
+func (list *candlesLinkedList) selectFn(fromSelectorFn func(*model.Candle) bool, toSelectorFn func(*model.Candle) bool) []*model.Candle {
+	values := make([]*model.Candle, 0)
 
 	started := false
 
-	for element := list.last; element != nil; element = element.prev {
-		if started || toSelectorFn(element.value) {
+	for element := list.first; element != nil; element = element.next {
+		if started || fromSelectorFn(element.value) {
 			started = true
 		} else {
 			continue
 		}
 
-		newList.append(element.value)
+		values = append(values, element.value)
 
-		if started && fromSelectorFn(element.value) {
+		if started && toSelectorFn(element.value) {
 			break
-		}
-	}
-
-	return newList
-}
-
-func (list *candlesLinkedList) selectFn(selectorFn func(*model.Candle) bool) []*model.Candle {
-	values := make([]*model.Candle, 0)
-
-	for element := list.first; element != nil; element = element.next {
-		if selectorFn(element.value) {
-			values = append(values, element.value)
-		}
-	}
-
-	return values
-}
-
-func (list *candlesLinkedList) selectBreakFn(selectorFn func(*model.Candle) bool, breakFn func(*model.Candle, []*model.Candle) bool) []*model.Candle {
-	values := make([]*model.Candle, 0)
-
-	for element := list.first; element != nil; element = element.next {
-		if breakFn(element.value, values) {
-			break
-		}
-
-		if selectorFn(element.value) {
-			values = append(values, element.value)
 		}
 	}
 

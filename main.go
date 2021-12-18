@@ -5,12 +5,13 @@ import (
 	"os"
 	"time"
 
-	logrus_stack "github.com/Gurpartap/logrus-stack"
+	logrusStack "github.com/Gurpartap/logrus-stack"
 	"github.com/jaffee/commandeer"
 	"github.com/mikekonan/freqtradeProxy/proxy"
 	"github.com/mikekonan/freqtradeProxy/proxy/kucoin"
 	"github.com/mikekonan/freqtradeProxy/store"
 	"github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
 )
 
 var version = "dev"
@@ -19,6 +20,7 @@ type app struct {
 	Verbose         int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
 	CacheSize       int           `help:"amount of candles to cache"`
 	TTLCacheTimeout time.Duration `help:"ttl of blobs of cached data"`
+	ClientTimeout   time.Duration `help:"client timeout"`
 
 	ProxyConfig  proxy.Config  `flag:"!embed"`
 	KucoinConfig kucoin.Config `flag:"!embed"`
@@ -29,6 +31,7 @@ func newApp() *app {
 		Verbose:         0,
 		CacheSize:       1000,
 		TTLCacheTimeout: time.Minute * 10,
+		ClientTimeout:   time.Second * 15,
 		KucoinConfig: kucoin.Config{
 			TopicsPerWs: 200,
 			RequestURL:  "https://openapi-v2.kucoin.com",
@@ -40,8 +43,8 @@ func newApp() *app {
 	}
 }
 
-func (m *app) configure() {
-	switch m.Verbose {
+func (app *app) configure() {
+	switch app.Verbose {
 	case 0:
 		logrus.SetLevel(logrus.InfoLevel)
 	case 1:
@@ -51,31 +54,42 @@ func (m *app) configure() {
 	}
 }
 
-func (a *app) Run() error {
+func (app *app) Run() error {
 	logrus.SetOutput(os.Stdout)
-	logrus.AddHook(logrus_stack.StandardHook())
+	logrus.AddHook(logrusStack.StandardHook())
 
-	logrus.Infof("freqtrade-proxy version - %s", version)
+	logrus.Infof("starting freqtrade-proxy: version - '%s'... ", version)
 
-	if a.Verbose > 2 {
-		return fmt.Errorf("wrong verbose level '%d'", a.Verbose)
+	if app.Verbose > 2 {
+		return fmt.Errorf("wrong verbose level '%d'", app.Verbose)
 	}
 
-	a.configure()
+	app.configure()
 
-	if err := a.ProxyConfig.Validate(); err != nil {
+	if err := app.ProxyConfig.Validate(); err != nil {
 		return err
 	}
 
-	if err := a.KucoinConfig.Validate(); err != nil {
+	if err := app.KucoinConfig.Validate(); err != nil {
 		return err
 	}
 
-	proxySrv := proxy.New(&a.ProxyConfig, kucoin.New(
-		store.NewStore(a.CacheSize),
-		store.NewTTLCache(a.TTLCacheTimeout),
-		&a.KucoinConfig),
+	client := &proxy.Client{
+		Client: fasthttp.Client{
+			ReadTimeout:  app.ClientTimeout,
+			WriteTimeout: app.ClientTimeout,
+		},
+	}
+
+	proxySrv := proxy.New(&app.ProxyConfig,
+		kucoin.New(
+			store.NewStore(app.CacheSize),
+			store.NewTTLCache(app.TTLCacheTimeout),
+			client,
+			&app.KucoinConfig,
+		),
 	)
+
 	proxySrv.Serve()
 
 	return nil

@@ -7,16 +7,11 @@ import (
 
 type Container struct {
 	raw       []byte
-	isGzipped bool
 	expiresAt time.Time
 }
 
 func (c *Container) Raw() []byte {
 	return c.raw
-}
-
-func (c *Container) IsGzipped() bool {
-	return c.isGzipped
 }
 
 func NewTTLCache(expirationTimeout time.Duration) *TTLCache {
@@ -51,13 +46,12 @@ func (s *TTLCache) Get(key string) *Container {
 	return container
 }
 
-func (s *TTLCache) Store(key string, value []byte, isGzipped bool) {
+func (s *TTLCache) Store(key string, value []byte) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
 	s.kv[key] = &Container{
 		raw:       value,
 		expiresAt: time.Now().UTC().Add(s.expirationTimeout),
-		isGzipped: isGzipped,
 	}
 }
