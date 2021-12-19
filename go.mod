@@ -1,4 +1,4 @@
-module github.com/mikekonan/freqtradeProxy
+module github.com/mikekonan/exchange-proxy
 
 go 1.16
 

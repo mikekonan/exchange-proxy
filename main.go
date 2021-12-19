@@ -8,9 +8,9 @@ import (
 
 	logrusStack "github.com/Gurpartap/logrus-stack"
 	"github.com/jaffee/commandeer"
-	"github.com/mikekonan/freqtradeProxy/proxy"
-	"github.com/mikekonan/freqtradeProxy/proxy/kucoin"
-	"github.com/mikekonan/freqtradeProxy/store"
+	"github.com/mikekonan/exchange-proxy/proxy"
+	"github.com/mikekonan/exchange-proxy/proxy/kucoin"
+	"github.com/mikekonan/exchange-proxy/store"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )

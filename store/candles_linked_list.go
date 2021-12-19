@@ -4,7 +4,7 @@ package store
 import (
 	"fmt"
 
-	"github.com/mikekonan/freqtradeProxy/model"
+	"github.com/mikekonan/exchange-proxy/model"
 )
 
 type candlesLinkedList struct {

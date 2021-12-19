@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mikekonan/freqtradeProxy/model"
+	"github.com/mikekonan/exchange-proxy/model"
 	"github.com/sirupsen/logrus"
 )
 

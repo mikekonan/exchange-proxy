@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/mikekonan/freqtradeProxy/store"
+	"github.com/mikekonan/exchange-proxy/store"
 	routing "github.com/qiangxue/fasthttp-routing"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"

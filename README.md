@@ -8,7 +8,7 @@ All improvements are made by me on a voluntary basis in my spare time.
 
 ### Usage
 ```shell
-Usage of ./dist/freqtrade-proxy:
+Usage of ./dist/exchange-proxy:
   -bindaddr string
         bindable address (default "0.0.0.0")
   -cache-size int
@@ -32,7 +32,7 @@ All unforeseen connection errors or the inaccessibility of the exchange will lea
 
 ### Local
 ```shell
-./freqtrade-proxy -port 8080
+./exchange-proxy -port 8080
 ```
 
 ### Docker (suggested way)
@@ -40,7 +40,7 @@ All unforeseen connection errors or the inaccessibility of the exchange will lea
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 ```shell
-docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
+docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:main-amd64
 ```
 
 #### Examples of usage:

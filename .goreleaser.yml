@@ -37,14 +37,14 @@ changelog:
 release:
   github:
     owner: mikekonan
-    name: freqtrade-proxy
+    name: exchange-proxy
   draft: true
   name_template: "{{.ProjectName}}-v{{.Version}}"
 
 dockers:
   - image_templates:
-      - mikekonan/freqtrade-proxy:latest-{{ .Os }}_{{ .Arch }}
-      - mikekonan/freqtrade-proxy:{{ .Tag }}-{{ .Os }}_{{ .Arch }}
+      - mikekonan/exchange-proxy:latest-{{ .Os }}_{{ .Arch }}
+      - mikekonan/exchange-proxy:{{ .Tag }}-{{ .Os }}_{{ .Arch }}
 
   - build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"

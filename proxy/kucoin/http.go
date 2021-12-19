@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/mailru/easyjson"
-	"github.com/mikekonan/freqtradeProxy/proxy"
-	"github.com/mikekonan/freqtradeProxy/store"
+	"github.com/mikekonan/exchange-proxy/proxy"
+	"github.com/mikekonan/exchange-proxy/store"
 	"github.com/qiangxue/fasthttp-routing"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"

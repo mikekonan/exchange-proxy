@@ -1,35 +1,36 @@
 # Freqtrade OPS
 
 ### Local
+
 ```shell
-git clone https://github.com/mikekonan/freqtrade-proxy.git
+git clone https://github.com/mikekonan/exchange-proxy.git
 make build
-./freqtrade-proxy -port 8080 -verbose 1
+./exchange-proxy -port 8080 -verbose 1
 ```
 
 #### config.json
 
 ```json
 {
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://127.0.0.1:8080/kucoin",
-                    "private": "http://127.0.0.1:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
+  "exchange": {
+    "name": "kucoin",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {
+      "enableRateLimit": false,
+      "timeout": 60000,
+      "urls": {
+        "api": {
+          "public": "http://127.0.0.1:8080/kucoin",
+          "private": "http://127.0.0.1:8080/kucoin"
         }
+      }
+    },
+    "ccxt_async_config": {
+      "enableRateLimit": false,
+      "timeout": 60000
     }
+  }
 }
 ```
 
@@ -38,32 +39,32 @@ make build
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 ```shell
-docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
+docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:main-amd64
 ```
 
 #### config.json
 
 ```json
 {
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://127.0.0.1:8080/kucoin",
-                    "private": "http://127.0.0.1:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
+  "exchange": {
+    "name": "kucoin",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {
+      "enableRateLimit": false,
+      "timeout": 60000,
+      "urls": {
+        "api": {
+          "public": "http://127.0.0.1:8080/kucoin",
+          "private": "http://127.0.0.1:8080/kucoin"
         }
+      }
+    },
+    "ccxt_async_config": {
+      "enableRateLimit": false,
+      "timeout": 60000
     }
+  }
 }
 ```
 
@@ -72,11 +73,12 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mik
 ###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
 
 See example - [docker-compose.yml](freqtrade-docker-compose.yml)
+
 ```yaml
-  freqtrade-proxy:
-    image: mikekonan/freqtrade-proxy:main-amd64
+  exchange-proxy:
+    image: mikekonan/exchange-proxy:main-amd64
     restart: unless-stopped
-    container_name: freqtrade-proxy
+    container_name: exchange-proxy
     command: -verbose 1
 ```
 
@@ -84,24 +86,24 @@ See example - [docker-compose.yml](freqtrade-docker-compose.yml)
 
 ```json
 {
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://freqtrade-proxy:8080/kucoin",
-                    "private": "http://freqtrade-proxy:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
+  "exchange": {
+    "name": "kucoin",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {
+      "enableRateLimit": false,
+      "timeout": 60000,
+      "urls": {
+        "api": {
+          "public": "http://exchange-proxy:8080/kucoin",
+          "private": "http://exchange-proxy:8080/kucoin"
         }
+      }
+    },
+    "ccxt_async_config": {
+      "enableRateLimit": false,
+      "timeout": 60000
     }
+  }
 }
 ```

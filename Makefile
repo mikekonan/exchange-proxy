@@ -7,13 +7,13 @@ generate: clean-generated ## generate
 	go fmt ./...
 
 build: generate ## build binaries
-	go build -trimpath -o ./dist/freqtrade-proxy
+	go build -trimpath -o ./dist/exchange-proxy
 
 clean-generated: ## clean generated
 	find . -name '*_easyjson.go' -delete
 
 clean: ## clean
-	rm -rf ./dist/freqtrade-proxy*
+	rm -rf ./dist/exchange-proxy*
 	find . -name '*_easyjson.go' -delete
 
 lint: ## lint
