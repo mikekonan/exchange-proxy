@@ -1,10 +1,12 @@
 FROM golang:1.17.4-alpine3.15 as builder
 
-RUN apk --no-cache add gcc musl-dev
+RUN apk --no-cache add gcc musl-dev && go get github.com/mailru/easyjson && go install github.com/mailru/easyjson/...@latest
 
 COPY . /src
 
-RUN cd /src && go build -o /src/bin/proxy
+ARG VERSION=dev
+
+RUN cd /src && make generate && go build -o /src/bin/proxy -ldflags "-s -w -X main.version=$VERSION"
 
 FROM alpine:3.15
 

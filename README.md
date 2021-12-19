@@ -1,54 +1,38 @@
-# freqtrade-proxy
+# exchange-proxy
 
-Kucoin proxy for freqtrade that is using websockets to maintain candlestick/klines data in memory, thus having great
-performance and reducing the amount of API calls to the Kucoin API. All other calls are proxied as usual.
-
-This project I made just for myself but can add more exchanges in the future.
+Exchange proxy using WebSockets to maintain candlestick/klines data in memory, thus having great performance, reducing the number of API calls to the exchange API, decreases latency and CPU usage.
+There is no warranty of correct working. You take all risks of using this.
+All improvements are made by me on a voluntary basis in my spare time.
 
 ## OPS
 
 ### Usage
 ```shell
-Usage of ./freqtrade-proxy:
+Usage of ./dist/freqtrade-proxy:
   -bindaddr string
         bindable address (default "0.0.0.0")
+  -cache-size int
+        amount of candles to cache (default 1000)
+  -client-timeout duration
+        client timeout (default 15s)
+  -kucoin-api-url string
+        kucoin api address (default "https://openapi-v2.kucoin.com")
+  -kucoin-topics-per-ws int
+        amount of topics per ws connection [10-280] (default 200)
   -port string
         listen port (default "8080")
+  -ttl-cache-timeout duration
+        ttl of blobs of cached data (default 10m0s)
   -verbose int
         verbose level: 0 - info, 1 - debug, 2 - trace
 ```
 
+#### Note
+All unforeseen connection errors or the inaccessibility of the exchange will lead to the proxy crash, which means that you have to handle it on your end 
+
 ### Local
 ```shell
-git clone https://github.com/mikekonan/freqtrade-proxy.git
-make build
-./freqtrade-proxy -port 8080 -verbose 1
-```
-
-#### config.json
-
-```json
-{
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://127.0.0.1:8080/kucoin",
-                    "private": "http://127.0.0.1:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
-        }
-    }
-}
+./freqtrade-proxy -port 8080
 ```
 
 ### Docker (suggested way)
@@ -59,77 +43,28 @@ make build
 docker run --restart=always -p 127.0.0.1:8080:8080 --name freqtrade-proxy -d mikekonan/freqtrade-proxy:main-amd64
 ```
 
-#### config.json
+#### Examples of usage:
+- [freqtrade](./docs/ops/freqtrade.md)
 
-```json
-{
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://127.0.0.1:8080/kucoin",
-                    "private": "http://127.0.0.1:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
-        }
-    }
-}
-```
-
-### Docker-compose (best way)
-
-###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
-
-See example - [docker-compose.yml](docker-compose.yml)
-```yaml
-  freqtrade-proxy:
-    image: mikekonan/freqtrade-proxy:main-amd64
-    restart: unless-stopped
-    container_name: freqtrade-proxy
-    command: -verbose 1
-```
-
-#### config.json
-
-```json
-{
-    "exchange": {
-        "name": "kucoin",
-        "key": "",
-        "secret": "",
-        "ccxt_config": {
-            "enableRateLimit": false,
-            "timeout": 60000,
-            "urls": {
-                "api": {
-                    "public": "http://freqtrade-proxy:8080/kucoin",
-                    "private": "http://freqtrade-proxy:8080/kucoin"
-                }
-            }
-        },
-        "ccxt_async_config": {
-            "enableRateLimit": false,
-            "timeout": 60000
-        }
-    }
-}
-```
+# Supported exchanges:
+- [Kucoin](./docs/exchanges/kucoin.md)
 
 ## Donations
 
 Donations are appreciated and will make me motivated to support and improve the project.
 
-USDT TRC20 - TYssA3EUfAagJ9afF6vfwJvwwueTafMbGY
+- USDT TRC20 - TYssA3EUfAagJ9afF6vfwJvwwueTafMbGY
+- XRP - rNFugeoj3ZN8Wv6xhuLegUBBPXKCyWLRkB 1869777767
+- DOGE - D6xwe5V9jRkvWksiHiajwZsJ3KJxBVqBUC
+- BTC - 35SrQDWAfwXcRGHaKbxNWwvHRNSLAbVjrk
+- ETH - 0x37c34bac13cf60f022be1bdea2dec1136cdc838a
 
-XRP - rNFugeoj3ZN8Wv6xhuLegUBBPXKCyWLRkB 1869777767
 
-DOGE - D6xwe5V9jRkvWksiHiajwZsJ3KJxBVqBUC
+### Referral links:
+- [Kucoin](https://www.kucoin.com/ucenter/signup?rcode=rJ327D3)
+
+- [Okex](https://www.okex.com/join/3941527)
+
+- [Gate.io](https://www.gate.io/signup/3325373)
+
+- [Currency.com](https://currency.com/trading/signup?c=ciqjuj5y&pid=referral)

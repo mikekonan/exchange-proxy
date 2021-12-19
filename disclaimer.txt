@@ -1,0 +1,21 @@
+##############################################################################################################################
+#    You are running an exchange proxy that uses WebSockets to maintain candlestick/klines data in memory,                   #
+#    thus having great performance, reducing the number of API calls to the exchange API, decreases latency and CPU usage.   #
+#                                                                                                                            #
+#    There is no warranty of correct working. You take all risks of using this.                                              #
+#                                                                                                                            #
+#    All improvements are made by me on a voluntary basis in my spare time.                                                  #
+#                                                                                                                            #
+#    Consider donating to support the project:                                                                               #
+#    USDT TRC20 - TYssA3EUfAagJ9afF6vfwJvwwueTafMbGY                                                                         #
+#    XRP - rNFugeoj3ZN8Wv6xhuLegUBBPXKCyWLRkB 1869777767                                                                     #
+#    DOGE - D6xwe5V9jRkvWksiHiajwZsJ3KJxBVqBUC                                                                               #
+#    BTC - 35SrQDWAfwXcRGHaKbxNWwvHRNSLAbVjrk                                                                                #
+#    ETH - 0x37c34bac13cf60f022be1bdea2dec1136cdc838a                                                                        #
+#                                                                                                                            #
+#    Referral links:                                                                                                         #
+#    Kucoin - https://www.kucoin.com/ucenter/signup?rcode=rJ327D3                                                            #
+#    Okex - https://www.okex.com/join/3941527                                                                                #
+#    Gate.io - https://www.gate.io/signup/3325373                                                                            #
+#    Currency.com - https://currency.com/trading/signup?c=ciqjuj5y&pid=referral                                              #
+##############################################################################################################################

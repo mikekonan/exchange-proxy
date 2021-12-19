@@ -41,3 +41,12 @@ release:
   draft: true
   name_template: "{{.ProjectName}}-v{{.Version}}"
 
+dockers:
+  - image_templates:
+      - mikekonan/freqtrade-proxy:latest-{{ .Os }}_{{ .Arch }}
+      - mikekonan/freqtrade-proxy:{{ .Tag }}-{{ .Os }}_{{ .Arch }}
+
+  - build_flag_templates:
+      - "--build-arg=VERSION={{ .Version }}"
+
+
