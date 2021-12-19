@@ -45,7 +45,10 @@ dockers:
   - image_templates:
       - mikekonan/exchange-proxy:latest-amd64
       - mikekonan/exchange-proxy:{{ .Version }}-amd64
+    dockerfile: docker/ci.Dockerfile
     use: buildx
+    goos: linux
+    goarch: amd64
     build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"
       - "--platform=linux/amd64"
@@ -53,7 +56,10 @@ dockers:
   - image_templates:
       - mikekonan/exchange-proxy:latest-arm64
       - mikekonan/exchange-proxy:{{ .Version }}-arm64
+    dockerfile: docker/ci.Dockerfile
     use: buildx
+    goos: linux
+    goarch: arm64
     build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"
       - "--platform=linux/arm64"
@@ -61,7 +67,11 @@ dockers:
   - image_templates:
       - mikekonan/exchange-proxy:latest-arm-v7
       - mikekonan/exchange-proxy:{{ .Version }}-arm-v7
+    dockerfile: docker/ci.Dockerfile
     use: buildx
+    goos: linux
+    goarch: arm
+    goarm: 7
     build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"
       - "--platform=linux/arm/v7"
@@ -69,7 +79,11 @@ dockers:
   - image_templates:
       - mikekonan/exchange-proxy:latest-arm-v6
       - mikekonan/exchange-proxy:{{ .Version }}-arm-v6
+    dockerfile: docker/ci.Dockerfile
     use: buildx
+    goos: linux
+    goarch: arm
+    goarm: 6
     build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"
       - "--platform=linux/arm/v6"

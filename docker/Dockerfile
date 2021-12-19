@@ -6,7 +6,7 @@ COPY . /src
 
 ARG VERSION=dev
 
-RUN cd /src/exchange-proxy && ls && cat Makefile && make generate && go build -o /src/bin/proxy -ldflags "-s -w -X main.version=$VERSION"
+RUN cd /src && make generate && go build -o /src/bin/proxy -ldflags "-s -w -X main.version=$VERSION"
 
 FROM alpine:3.15
 
