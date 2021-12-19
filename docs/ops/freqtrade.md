@@ -36,10 +36,10 @@ make build
 
 ### Docker (suggested way)
 
-###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
+###### Use different tags for different platforms e.g. - latest-amd64, latest-arm-v6, latest-arm-v7, latest-arm64
 
 ```shell
-docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:main-amd64
+docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:latest-amd64
 ```
 
 #### config.json
@@ -70,13 +70,13 @@ docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mike
 
 ### Docker-compose (best way)
 
-###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
+###### Use different tags for different platforms e.g. - latest-amd64, latest-arm-v6, latest-arm-v7, latest-arm64
 
 See example - [docker-compose.yml](freqtrade-docker-compose.yml)
 
 ```yaml
   exchange-proxy:
-    image: mikekonan/exchange-proxy:main-amd64
+    image: mikekonan/exchange-proxy:latest-amd64
     restart: unless-stopped
     container_name: exchange-proxy
     command: -verbose 1

@@ -15,7 +15,7 @@ services:
       --strategy SampleStrategy
 
   exchange-proxy:
-    image: mikekonan/exchange-proxy:main-amd64
+    image: mikekonan/exchange-proxy:latest-amd64
     restart: unless-stopped
     command: -verbose 1
     container_name: github.com/mikekonan/exchange-proxy-proxy

@@ -37,10 +37,10 @@ All unforeseen connection errors or the inaccessibility of the exchange will lea
 
 ### Docker (suggested way)
 
-###### Use different tags for different platforms e.g. - main-amd64, main-arm-v6, main-arm-v7, main-arm64
+###### Use different tags for different platforms e.g. - latest-amd64, latest-arm-v6, latest-arm-v7, latest-arm64
 
 ```shell
-docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:main-amd64
+docker run --restart=always -p 127.0.0.1:8080:8080 --name exchange-proxy -d mikekonan/exchange-proxy:latest-amd64
 ```
 
 #### Examples of usage:
