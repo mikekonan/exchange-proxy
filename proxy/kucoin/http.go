@@ -2,7 +2,7 @@ package kucoin
 
 import (
 	"fmt"
-	"net/http"
+	netHttp "net/http"
 	"sync"
 	"time"
 
@@ -22,10 +22,10 @@ const (
 	symbolsPath    = "api/v1/symbols"
 )
 
-func New(store *store.Store, ttlCache *store.TTLCache, client *proxy.Client, config *Config) *service {
+func New(store *store.Store, ttlCache *store.TTLCache, client *proxy.Client, config *Config) *http {
 	httpRl := ratelimit.New(15)
 
-	instance := &service{
+	instance := &http{
 		config:   config,
 		client:   client,
 		store:    store,
@@ -46,7 +46,7 @@ func New(store *store.Store, ttlCache *store.TTLCache, client *proxy.Client, con
 	return instance
 }
 
-type service struct {
+type http struct {
 	client *proxy.Client
 
 	store    *store.Store
@@ -57,10 +57,10 @@ type service struct {
 	config     *Config
 }
 
-func (service *service) executeKLinesRequest(pair string, timeframe string, startAt int64, endAt int64) (int, *kLinesResponse, []byte, error) {
-	path := fmt.Sprintf("%s/%s?type=%s&symbol=%s&startAt=%d&endAt=%d", service.config.RequestURL, kLinesPath, timeframe, pair, startAt, endAt)
+func (http *http) executeKLinesRequest(pair string, timeframe string, startAt int64, endAt int64) (int, *kLinesResponse, []byte, error) {
+	path := fmt.Sprintf("%s/%s?type=%s&symbol=%s&startAt=%d&endAt=%d", http.config.KucoinApiURL, kLinesPath, timeframe, pair, startAt, endAt)
 
-	statusCode, data, err := service.client.Get(nil, path)
+	statusCode, data, err := http.client.Get(nil, path)
 	if err != nil {
 		return statusCode, nil, nil, err
 	}
@@ -73,11 +73,11 @@ func (service *service) executeKLinesRequest(pair string, timeframe string, star
 	return statusCode, kLinesResponse, data, nil
 }
 
-func (service *service) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (int, *kLinesResponse, []byte, error) {
+func (http *http) getKlines(pair string, timeframe string, startAt int64, endAt int64, retryCount int) (int, *kLinesResponse, []byte, error) {
 	for i := 1; i <= retryCount; i++ {
-		service.rl.Take()
+		http.rl.Take()
 
-		if statusCode, kLinesResponse, data, err := service.executeKLinesRequest(pair, timeframe, startAt, endAt); statusCode == 200 {
+		if statusCode, kLinesResponse, data, err := http.executeKLinesRequest(pair, timeframe, startAt, endAt); statusCode == 200 {
 			return statusCode, kLinesResponse, data, nil
 		} else {
 			if i == retryCount {
@@ -91,15 +91,15 @@ func (service *service) getKlines(pair string, timeframe string, startAt int64, 
 	return 500, nil, nil, fmt.Errorf("retry count is zero")
 }
 
-func (service *service) transparentRequestURI(c *routing.Context) string {
-	return fmt.Sprintf("%s/%s", service.config.RequestURL, c.Request.URI().RequestURI()[8:])
+func (http *http) transparentRequestURI(c *routing.Context) string {
+	return fmt.Sprintf("%s/%s", http.config.KucoinApiURL, c.Request.URI().RequestURI()[8:])
 }
 
-func (service *service) Name() string {
+func (http *http) Name() string {
 	return "kucoin"
 }
 
-func (service *service) Routes() []struct {
+func (http *http) Routes() []struct {
 	Path    string
 	Method  string
 	Handler func(c *routing.Context) error
@@ -112,25 +112,25 @@ func (service *service) Routes() []struct {
 	}{
 		{
 			Path:    tickersPath,
-			Method:  http.MethodGet,
-			Handler: proxy.TransparentOverCacheHandler(service.transparentRequestURI, service.client, service.ttlCache),
+			Method:  netHttp.MethodGet,
+			Handler: proxy.TransparentOverCacheHandler(http.transparentRequestURI, http.client, http.ttlCache),
 		},
 
 		{
 			Path:    currenciesPath,
-			Method:  http.MethodGet,
-			Handler: proxy.TransparentOverCacheHandler(service.transparentRequestURI, service.client, service.ttlCache),
+			Method:  netHttp.MethodGet,
+			Handler: proxy.TransparentOverCacheHandler(http.transparentRequestURI, http.client, http.ttlCache),
 		},
 
 		{
 			Path:    symbolsPath,
-			Method:  http.MethodGet,
-			Handler: proxy.TransparentOverCacheHandler(service.transparentRequestURI, service.client, service.ttlCache),
+			Method:  netHttp.MethodGet,
+			Handler: proxy.TransparentOverCacheHandler(http.transparentRequestURI, http.client, http.ttlCache),
 		},
 
 		{
 			Path:   kLinesPath,
-			Method: http.MethodGet,
+			Method: netHttp.MethodGet,
 			Handler: func(c *routing.Context) error {
 				logrus.Debugf("proxying - %s", c.Request.RequestURI())
 
@@ -140,10 +140,10 @@ func (service *service) Routes() []struct {
 				endAt := time.Unix(cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("endAt"))), 0)
 				endAtAfterNow := endAt.After(time.Now().UTC())
 
-				candles := service.store.Get(storeKey(pair, timeframe), startAt, endAt)
+				candles := http.store.Get(storeKey(pair, timeframe), startAt, endAt)
 
 				if len(candles) == 0 {
-					statusCode, klinesResponse, data, err := service.getKlines(pair, timeframe, startAt.Unix(), endAt.Unix(), 15)
+					statusCode, klinesResponse, data, err := http.getKlines(pair, timeframe, startAt.Unix(), endAt.Unix(), 15)
 
 					c.Response.SetStatusCode(statusCode)
 					c.Response.SetBody(data)
@@ -157,14 +157,14 @@ func (service *service) Routes() []struct {
 					}
 
 					if endAtAfterNow {
-						service.store.Store(
+						http.store.Store(
 							storeKey(pair, timeframe),
 							timeframeToDuration(timeframe),
 							parseKLines(klinesResponse.Klines)...,
 						)
 
 						if err == nil {
-							go service.subscriber.subscribeKLines(pair, timeframe)
+							go http.subscriber.subscribeKLines(pair, timeframe)
 						}
 					}
 
@@ -187,7 +187,7 @@ func (service *service) Routes() []struct {
 		{
 			Path:    "*",
 			Method:  proxy.AnyHTTPMethod,
-			Handler: proxy.TransparentHandler(service.transparentRequestURI, service.client),
+			Handler: proxy.TransparentHandler(http.transparentRequestURI, http.client),
 		},
 	}
 }

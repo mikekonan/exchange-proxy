@@ -52,7 +52,7 @@ func (s *subscriber) subscribeKLines(pair string, tf string) {
 	s.subs[topic] = struct{}{}
 
 	for i, c := range s.pool {
-		if c.subsCount == s.config.TopicsPerWs {
+		if c.subsCount == s.config.KucoinTopicsPerWs {
 			continue
 		}
 
@@ -118,7 +118,7 @@ type ws struct {
 func (w *ws) executeBulletPublicRequest() (int, *bulletPublicResponse, error) {
 	w.httpRl.Take()
 
-	statusCode, data, err := w.client.Post(nil, fmt.Sprintf("%s/%s", w.config.RequestURL, bulletPublicPath), nil)
+	statusCode, data, err := w.client.Post(nil, fmt.Sprintf("%s/%s", w.config.KucoinApiURL, bulletPublicPath), nil)
 
 	if err != nil {
 		return statusCode, nil, err

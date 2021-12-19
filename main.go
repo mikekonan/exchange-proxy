@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"time"
@@ -14,7 +15,12 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-var version = "dev"
+var (
+	//go:embed disclaimer.txt
+	disclaimer string
+
+	version = "dev"
+)
 
 type app struct {
 	Verbose         int           `help:"verbose level: 0 - info, 1 - debug, 2 - trace"`
@@ -33,8 +39,8 @@ func newApp() *app {
 		TTLCacheTimeout: time.Minute * 10,
 		ClientTimeout:   time.Second * 15,
 		KucoinConfig: kucoin.Config{
-			TopicsPerWs: 200,
-			RequestURL:  "https://openapi-v2.kucoin.com",
+			KucoinTopicsPerWs: 200,
+			KucoinApiURL:      "https://openapi-v2.kucoin.com",
 		},
 		ProxyConfig: proxy.Config{
 			Port:     "8080",
@@ -58,7 +64,9 @@ func (app *app) Run() error {
 	logrus.SetOutput(os.Stdout)
 	logrus.AddHook(logrusStack.StandardHook())
 
-	logrus.Infof("starting freqtrade-proxy: version - '%s'... ", version)
+	fmt.Println(disclaimer)
+
+	logrus.Infof("starting exchange-proxy: version - '%s'... ", version)
 
 	if app.Verbose > 2 {
 		return fmt.Errorf("wrong verbose level '%d'", app.Verbose)
