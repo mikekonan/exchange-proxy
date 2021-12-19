@@ -29,6 +29,10 @@ jobs:
           go get github.com/mailru/easyjson && go install github.com/mailru/easyjson/...@latest
           go mod tidy
           make generate
+      - name: Lint
+        run: |
+          go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+          make lint
       - name: Docker Login
         uses: docker/login-action@v1
         with:

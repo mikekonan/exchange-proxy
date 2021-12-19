@@ -43,8 +43,8 @@ release:
 
 dockers:
   - image_templates:
-      - mikekonan/exchange-proxy:latest-{{ .Os }}_{{ .Arch }}
-      - mikekonan/exchange-proxy:{{ .Tag }}-{{ .Os }}_{{ .Arch }}
+      - mikekonan/exchange-proxy:latest-{{ .Arch }}
+      - mikekonan/exchange-proxy:{{ .Tag }}_{{ .Arch }}
   - dockerfile: Dockerfile
   - build_flag_templates:
       - "--build-arg=VERSION={{ .Version }}"
