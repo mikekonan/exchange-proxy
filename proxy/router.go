@@ -20,7 +20,7 @@ type Routable interface {
 	Name() string
 }
 
-func New(config *Config, routable Routable) *Router {
+func New(config *Config, routable Routable) *Server {
 	router := routing.New()
 
 	for _, route := range routable.Routes() {
@@ -35,18 +35,21 @@ func New(config *Config, routable Routable) *Router {
 		router.To(route.Method, path, route.Handler)
 	}
 
-	return &Router{
-		router: router,
+	return &Server{
+		server: &fasthttp.Server{
+			Handler:     router.HandleRequest,
+			Concurrency: config.ConcurrencyLimit,
+		},
 		config: config,
 	}
 }
 
-type Router struct {
+type Server struct {
 	config *Config
-	router *routing.Router
+	server *fasthttp.Server
 }
 
-func (r *Router) Serve() {
-	logrus.Infof("starting proxy server on :%s port...", r.config.Port)
-	panic(fasthttp.ListenAndServe(fmt.Sprintf("%s:%s", r.config.Bindaddr, r.config.Port), r.router.HandleRequest))
+func (s *Server) Serve() {
+	logrus.Infof("starting proxy server on :%s port...", s.config.Port)
+	logrus.Fatal(s.server.ListenAndServe(fmt.Sprintf("%s:%s", s.config.Bindaddr, s.config.Port)))
 }

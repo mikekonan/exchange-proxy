@@ -43,8 +43,9 @@ func newApp() *app {
 			KucoinApiURL:      "https://openapi-v2.kucoin.com",
 		},
 		ProxyConfig: proxy.Config{
-			Port:     "8080",
-			Bindaddr: "0.0.0.0",
+			Port:             "8080",
+			Bindaddr:         "0.0.0.0",
+			ConcurrencyLimit: fasthttp.DefaultConcurrency,
 		},
 	}
 }
