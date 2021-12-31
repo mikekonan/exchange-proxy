@@ -15,6 +15,8 @@ Usage of ./dist/exchange-proxy:
         amount of candles to cache (default 1000)
   -client-timeout duration
         client timeout (default 15s)
+  -concurrency-limit int
+        server concurrency limit (default 262144)
   -kucoin-api-url string
         kucoin api address (default "https://openapi-v2.kucoin.com")
   -kucoin-topics-per-ws int
