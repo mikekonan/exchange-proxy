@@ -138,7 +138,7 @@ func (http *http) Routes() []struct {
 				timeframe := string(c.Request.URI().QueryArgs().Peek("type"))
 				startAt := time.Unix(cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("startAt"))), 0)
 				endAt := time.Unix(cast.ToInt64(string(c.Request.URI().QueryArgs().Peek("endAt"))), 0)
-				endAtAfterNow := endAt.After(time.Now().UTC())
+				endAtAfterNow := endAt.After(time.Now().UTC().Add(-timeframeToDuration(timeframe)))
 
 				candles := http.store.Get(storeKey(pair, timeframe), startAt, endAt)
 
