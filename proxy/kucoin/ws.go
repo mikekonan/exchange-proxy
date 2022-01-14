@@ -274,7 +274,8 @@ func (w *ws) subscribeKLines(topic string) error {
 func (w *ws) processFrame(frame *websocket.Frame) {
 	message := &genericMessageResponse{}
 	if err := easyjson.Unmarshal(frame.Payload(), message); err != nil {
-		logrus.Fatalf("failed parsing generic message: %v", err)
+		logrus.Fatalf("failed parsing generic message: %v. message is : '%s'", err, string(frame.Payload()))
+
 		return
 	}
 

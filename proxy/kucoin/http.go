@@ -35,7 +35,7 @@ func New(store *store.Store, ttlCache *store.TTLCache, client *proxy.Client, con
 			l:      new(sync.Mutex),
 			pool:   nil,
 			httpRl: httpRl,
-			wsRl:   ratelimit.New(9),
+			wsRl:   ratelimit.New(5),
 			subs:   map[string]struct{}{},
 			config: config,
 			client: client,
