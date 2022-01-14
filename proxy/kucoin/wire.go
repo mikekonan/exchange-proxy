@@ -2,8 +2,6 @@ package kucoin
 
 import (
 	"encoding/json"
-
-	"github.com/google/uuid"
 )
 
 //go:generate easyjson -lower_camel_case -omit_empty wire.go
@@ -25,23 +23,23 @@ type bulletPublicResponse struct {
 
 //easyjson:json
 type welcomeMessageResponse struct {
-	ID   uuid.UUID `json:"id"`
-	Type string    `json:"type"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 //easyjson:json
 type pingMessageRequest struct {
-	ID   uuid.UUID `json:"id"`
-	Type string    `json:"type"`
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }
 
 //easyjson:json
 type subscribeMessageRequest struct {
-	ID             uuid.UUID `json:"id"`
-	Type           string    `json:"type"`
-	Topic          string    `json:"topic"`
-	PrivateChannel bool      `json:"privateChannel"`
-	Response       bool      `json:"response"`
+	ID             string `json:"id"`
+	Type           string `json:"type"`
+	Topic          string `json:"topic"`
+	PrivateChannel bool   `json:"privateChannel"`
+	Response       bool   `json:"response"`
 }
 
 //easyjson:json
@@ -52,7 +50,7 @@ type kLineUpdateMessageEntry struct {
 
 //easyjson:json
 type genericMessageResponse struct {
-	ID      uuid.UUID       `json:"id"`
+	ID      string          `json:"id"`
 	Type    string          `json:"type"`
 	Topic   string          `json:"topic"`
 	Subject string          `json:"subject"`
