@@ -75,9 +75,9 @@ func (s *subscriber) subscribeKLines(pair string, tf string) {
 		retryCount: 15,
 		store:      s.store,
 		config:     s.config,
-		id:         uuid.New(),
+		id:         uuid.New().String(),
 		conn:       nil,
-		pingPongCh: make(chan uuid.UUID, 1),
+		pingPongCh: make(chan string, 1),
 
 		writeLock: new(sync.Mutex),
 	}
@@ -95,7 +95,7 @@ func (s *subscriber) subscribeKLines(pair string, tf string) {
 }
 
 type ws struct {
-	id uuid.UUID
+	id string
 
 	subsCount int
 
@@ -110,7 +110,7 @@ type ws struct {
 
 	pingInterval *time.Ticker
 	pingTimeout  time.Duration
-	pingPongCh   chan uuid.UUID
+	pingPongCh   chan string
 
 	writeLock *sync.Mutex
 }
@@ -159,7 +159,7 @@ func (w *ws) connect() {
 	w.pingInterval = time.NewTicker(time.Millisecond * time.Duration(bulletResp.Data.InstanceServers[0].PingInterval))
 	w.pingTimeout = time.Millisecond * time.Duration(bulletResp.Data.InstanceServers[0].PingTimeout)
 
-	path := fmt.Sprintf("%s?token=%s&connectId=%s", bulletResp.Data.InstanceServers[0].Endpoint, bulletResp.Data.Token, w.id.String())
+	path := fmt.Sprintf("%s?token=%s&connectId=%s", bulletResp.Data.InstanceServers[0].Endpoint, bulletResp.Data.Token, w.id)
 
 	conn, err := websocket.Dial(path)
 	if err != nil {
@@ -172,8 +172,8 @@ func (w *ws) connect() {
 	go w.pingPongRoutine()
 }
 
-func (w *ws) handlePongResponse(waitForID uuid.UUID) {
-	logrus.Debugf("handling pong message with id '%s'", waitForID.String())
+func (w *ws) handlePongResponse(waitForID string) {
+	logrus.Debugf("handling pong message with id '%s'", waitForID)
 
 	for {
 		select {
@@ -183,7 +183,7 @@ func (w *ws) handlePongResponse(waitForID uuid.UUID) {
 			if waitForID == receivedID {
 				return
 			} else {
-				logrus.Warnf("ping/pong id mismatch: sent '%s', received '%s'", waitForID.String(), receivedID.String())
+				logrus.Warnf("ping/pong id mismatch: sent '%s', received '%s'", waitForID, receivedID)
 				w.pingPongCh <- receivedID
 			}
 		}
@@ -203,10 +203,10 @@ func (w *ws) pingPongRoutine() {
 	}
 }
 
-func (w *ws) writePing() uuid.UUID {
-	id := uuid.New()
+func (w *ws) writePing() string {
+	id := uuid.New().String()
 
-	logrus.Debugf("writing ping message with id '%s'", id.String())
+	logrus.Debugf("writing ping message with id '%s'", id)
 
 	data, err := easyjson.Marshal(pingMessageRequest{ID: id, Type: ping})
 
@@ -249,7 +249,7 @@ func (w *ws) subscribeKLines(topic string) error {
 	logrus.Debugf("subscribing to '%s'...", topic)
 
 	message := subscribeMessageRequest{
-		ID:             uuid.New(),
+		ID:             uuid.New().String(),
 		Type:           subscribeMessageType,
 		Topic:          topic,
 		PrivateChannel: false,
