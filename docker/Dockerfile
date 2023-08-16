@@ -1,4 +1,4 @@
-FROM golang:1.17.4-alpine3.15 as builder
+FROM golang:1.21-alpine3.18 as builder
 
 RUN apk --no-cache add gcc musl-dev make && go get github.com/mailru/easyjson && go install github.com/mailru/easyjson/...@latest
 
@@ -8,7 +8,7 @@ ARG VERSION=dev
 
 RUN cd /src && make generate && go build -o /src/bin/proxy -ldflags "-s -w -X main.version=$VERSION"
 
-FROM alpine:3.15
+FROM alpine:3.18
 
 RUN adduser -g "proxy" -D -H proxy proxy
 

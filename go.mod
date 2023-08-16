@@ -1,6 +1,6 @@
 module github.com/mikekonan/exchange-proxy
 
-go 1.16
+go 1.21
 
 require (
 	github.com/Gurpartap/logrus-stack v0.0.0-20170710170904-89c00d8a28f4

@@ -39,7 +39,7 @@ func (s *TTLCache) Get(key string) *Container {
 	}
 
 	if container.expiresAt.Before(time.Now().UTC()) {
-		s.kv[key] = nil
+		delete(s.kv, key)
 		return nil
 	}
 
